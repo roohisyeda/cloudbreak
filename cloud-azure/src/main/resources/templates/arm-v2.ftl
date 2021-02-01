@@ -230,11 +230,11 @@
                    "name": "[concat(parameters('nicNamePrefix'), '${instance.instanceId}')]",
                    "location": "[parameters('region')]",
                    "tags": {
-                 <#if userDefinedTags?? && userDefinedTags?has_content>
-                     <#list userDefinedTags?keys as key>
-                        "${key}": "${userDefinedTags[key]}"<#if key_has_next>,</#if>
-                        </#list>
-                 </#if>
+                     <#if userDefinedTags?? && userDefinedTags?has_content>
+                         <#list userDefinedTags?keys as key>
+                            "${key}": "${userDefinedTags[key]}"<#if key_has_next>,</#if>
+                            </#list>
+                     </#if>
                     },
                    "dependsOn": [
                        <#if !noFirewallRules>
@@ -256,18 +256,16 @@
                        </#if>
                    ],
                    "properties": {
-                   <#if acceleratedNetworkEnabled[instance.flavor]>
-                       "enableAcceleratedNetworking": "true",
-                   </#if>
-                    <#if securityGroups[instance.groupName]?? && securityGroups[instance.groupName]?has_content>
-                       "networkSecurityGroup":{
-                           "id": "${securityGroups[instance.groupName]}"
-                        },
-                    <#elseif !noFirewallRules>
-                        "networkSecurityGroup":{
-                            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/', variables('${instance.groupName?replace('_', '')}secGroupName'))]"
-                       },
-                    </#if>
+                       <#if acceleratedNetworkEnabled[instance.flavor]> "enableAcceleratedNetworking": "true", </#if>
+                        <#if securityGroups[instance.groupName]?? && securityGroups[instance.groupName]?has_content>
+                           "networkSecurityGroup":{
+                               "id": "${securityGroups[instance.groupName]}"
+                            },
+                        <#elseif !noFirewallRules>
+                            "networkSecurityGroup":{
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups/', variables('${instance.groupName?replace('_', '')}secGroupName'))]"
+                           },
+                        </#if>
                        "ipConfigurations": [
                            {
                                "name": "ipconfig1",
@@ -384,6 +382,126 @@
              </#list>
              <#if (instanceGroup_index + 1) != groups?size>,</#if>
              </#list>
-
+            <#list loadBalancers as loadBalancer>
+                {
+                  "apiVersion": "2020-05-01",
+                  "type": "Microsoft.Network/loadBalancers",
+                  "dependsOn": [
+                    "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', ${loadBalancer.name}, 'address-pool')]"
+                  ],
+                  "location": "[parameters('region')]",
+                  "name": "${loadBalancer.name}",
+                  "properties": {
+                    "backendAddressPools": [
+                      {
+                        "name": "address-pool",
+                        "properties": {}
+                      }
+                    ],
+                    "frontendIPConfigurations": [
+                      {
+                        "name": "LoadBalancerFrontEnd",
+                        "properties": {
+                          "privateIPAddress": "10.124.208.16",
+                          "privateIPAddressVersion": "IPv4",
+                          "privateIPAllocationMethod": "Static",
+                          "subnet": {
+                            "id": "[concat(parameters('virtualNetworks_sdx_daily_externalid'), '/subnets/sdx-daily.external.0.westus2')]"
+                          }
+                        }
+                      },
+                      {
+                        "name": "static-internal-ip-address",
+                        "properties": {
+                          "privateIPAddress": "10.124.210.111",
+                          "privateIPAddressVersion": "IPv4",
+                          "privateIPAllocationMethod": "Static",
+                          "subnet": {
+                            "id": "[concat(parameters('virtualNetworks_sdx_daily_externalid'), '/subnets/sdx-daily.internal.0.westus2')]"
+                          }
+                        }
+                      }
+                    ],
+                    "inboundNatPools": [],
+                    "inboundNatRules": [],
+                    "loadBalancingRules": [
+                      {
+                        "name": "${loadBalancer.name}-knox-rule",
+                        "properties": {
+                          "backendAddressPool": {
+                            "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', ${loadBalancer.name}, 'address-pool')]"
+                          },
+                          "backendPort": 8443,
+                          "enableFloatingIP": false,
+                          "enableTcpReset": false,
+                          "frontendIPConfiguration": {
+                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/frontendIPConfigurations/static-internal-ip-address')]"
+                          },
+                          "frontendPort": 8443,
+                          "idleTimeoutInMinutes": 4,
+                          "loadDistribution": "Default",
+                          "probe": {
+                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/probes/knox-health-probe')]"
+                          },
+                          "protocol": "Tcp"
+                        }
+                      },
+                      {
+                        "name": "${loadBalancer.name}-traffic-rule",
+                        "properties": {
+                          "backendAddressPool": {
+                            "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', ${loadBalancer.name}, 'address-pool')]"
+                          },
+                          "backendPort": 443,
+                          "enableFloatingIP": false,
+                          "enableTcpReset": false,
+                          "frontendIPConfiguration": {
+                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/frontendIPConfigurations/static-internal-ip-address')]"
+                          },
+                          "frontendPort": 443,
+                          "idleTimeoutInMinutes": 4,
+                          "loadDistribution": "Default",
+                          "probe": {
+                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/probes/https-traffic-health-probe')]"
+                          },
+                          "protocol": "Tcp"
+                        }
+                      }
+                    ],
+                    "probes": [
+                      {
+                        "name": "https-traffic-health-probe",
+                        "properties": {
+                          "intervalInSeconds": 5,
+                          "numberOfProbes": 2,
+                          "port": 443,
+                          "protocol": "Tcp"
+                        }
+                      },
+                      {
+                        "name": "knox-health-probe",
+                        "properties": {
+                          "intervalInSeconds": 5,
+                          "numberOfProbes": 2,
+                          "port": 8443,
+                          "protocol": "Tcp"
+                        }
+                      }
+                    ]
+                  },
+                  "sku": {
+                    "name": "Basic"
+                  }
+                },
+                {
+                  "apiVersion": "2020-05-01",
+                  "dependsOn": [
+                    "[resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name})]"
+                  ],
+                  "name": "[concat(${loadBalancer.name}, '/address-pool')]",
+                  "properties": {},
+                  "type": "Microsoft.Network/loadBalancers/backendAddressPools"
+                }
+            </#list>
      	]
 }
