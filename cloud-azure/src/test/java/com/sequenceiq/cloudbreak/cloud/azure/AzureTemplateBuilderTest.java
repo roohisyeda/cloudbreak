@@ -425,6 +425,42 @@ public class AzureTemplateBuilderTest {
     }
 
     @Test
+    public void buildWithGatewayInstanceGroupTypeAndLoadBalancer() {
+        //GIVEN
+        Network network = new Network(new Subnet("testSubnet"));
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("persistentStorage", "persistentStorageTest");
+        parameters.put("attachedStorageOption", "attachedStorageOptionTest");
+        InstanceAuthentication instanceAuthentication = new InstanceAuthentication("sshkey", "", "cloudbreak");
+
+
+        groups.add(new Group(name, InstanceGroupType.GATEWAY, Collections.singletonList(instance), security, null,
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE, Optional.empty()));
+
+        List<CloudLoadBalancer> loadBalancers = new ArrayList<>();
+        CloudLoadBalancer loadBalancer = new CloudLoadBalancer(LoadBalancerType.PRIVATE);
+        loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(443, 443), new HashSet<>(groups));
+        loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(8443, 8443), new HashSet<>(groups));
+        loadBalancers.add(loadBalancer);
+
+        cloudStack = new CloudStack(groups, network, image, parameters, tags, azureTemplateBuilder.getTemplateString(),
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), null, loadBalancers);
+        azureStackView = new AzureStackView("mystack", 3, groups, azureStorageView, azureSubnetStrategy, Collections.emptyMap());
+
+        //WHEN
+        when(azureAcceleratedNetworkValidator.validate(any())).thenReturn(ACCELERATED_NETWORK_SUPPORT);
+
+        when(azureStorage.getImageStorageName(any(AzureCredentialView.class), any(CloudContext.class), any(CloudStack.class))).thenReturn("test");
+        when(azureStorage.getDiskContainerName(any(CloudContext.class))).thenReturn("testStorageContainer");
+        String templateString =
+                azureTemplateBuilder.build(stackName, CUSTOM_IMAGE_NAME, azureCredentialView, azureStackView, cloudContext, cloudStack,
+                        AzureInstanceTemplateOperation.PROVISION);
+        //THEN
+        gson.fromJson(templateString, Map.class);
+        assertTrue(templateString.contains("\"type\": \"Microsoft.Network/loadBalancers\","));
+    }
+
+    @Test
     public void buildWithInstanceGroupTypeGatewayShouldNotContainsCoreCustomData() {
         //GIVEN
         Network network = new Network(new Subnet("testSubnet"));

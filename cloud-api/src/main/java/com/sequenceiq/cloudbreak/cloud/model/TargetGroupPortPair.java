@@ -9,7 +9,7 @@ import java.util.Objects;
  * the healthCheckPort ever go into an unhealthy state, the load balancer will stop forwarding traffic to the trafficPort
  * for the unhealthy instance.
  */
-public class TargetGroupPortPair {
+public class TargetGroupPortPair { // todo: rename to "cloud port pair"? It's a pairing of traffic and health check ports. Azure doesn't have TargetGroups!
 
     private final int trafficPort;
 
