@@ -428,7 +428,7 @@
                     "loadBalancingRules": [
                         <#list loadBalancer.rules as rule>
                             {
-                                "name": "variables('loadBalancerName')-knox-rule",
+                                "name": "${rule.name}",
                                 "properties": {
                                     "backendAddressPool": {
                                         "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
