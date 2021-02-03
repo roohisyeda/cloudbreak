@@ -76,6 +76,27 @@ import com.sequenceiq.common.api.type.LoadBalancerType;
 
 import freemarker.template.Configuration;
 
+// todo: migrate to Junit 5.
+
+/**
+ * Validates that ARM template can be created from Free Marker Template {@code .ftl} files.
+ *
+ * This checks that:
+ * <ul>
+ *     <li>{@code .ftl} files are properly formatted</li>
+ *     <li>Valid Json is produced</li>
+ *     <li>Certain values are contained in the Json</li>
+ * </ul>
+ *
+ * This class is parameterized, so a single test will be used to run against multiple template files.
+ * The template files are in {@code main/resources} and {@code test/resources}.
+ *
+ * To opt out of running a test for <em>older</em> versions of the template, place the {@code assumeTrue()} method at
+ * the beginning of your test.
+ * <pre>{@code
+ *     assumeTrue(isTemplateVersionGreaterOrEqualThan("2.7.3.0"));
+ * }</pre>
+ */
 @RunWith(Parameterized.class)
 public class AzureTemplateBuilderTest {
 
@@ -431,6 +452,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildWithGatewayInstanceGroupTypeAndLoadBalancer() {
         //GIVEN
+        assumeTrue(isTemplateVersionGreaterOrEqualThan("2.7.3.0"));
         Network network = new Network(new Subnet("testSubnet"));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
