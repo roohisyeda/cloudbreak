@@ -1,6 +1,7 @@
 package com.sequenceiq.cloudbreak.cloud.azure;
 
 import static com.sequenceiq.cloudbreak.cloud.azure.AzureInstanceTemplateOperation.UPSCALE;
+import static java.util.stream.Collectors.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import com.sequenceiq.cloudbreak.cloud.azure.loadbalancer.AzureLoadBalancer;
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +103,7 @@ public class AzureTemplateBuilder {
             model.put("userDefinedTags", cloudStack.getTags());
             model.put("acceleratedNetworkEnabled", azureAcceleratedNetworkValidator.validate(armStack));
             model.put("isUpscale", UPSCALE.equals(azureInstanceTemplateOperation));
-            model.put("loadBalancers", cloudStack.getLoadBalancers());
+            model.put("loadBalancers", cloudStack.getLoadBalancers().stream().map(lb -> new AzureLoadBalancer(lb)).collect(toList()));
             String generatedTemplate = freeMarkerTemplateUtils.processTemplateIntoString(getTemplate(cloudStack), model);
             LOGGER.info("Generated Arm template: {}", generatedTemplate);
             return generatedTemplate;

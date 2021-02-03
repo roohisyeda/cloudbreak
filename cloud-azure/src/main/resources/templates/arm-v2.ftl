@@ -89,7 +89,8 @@
           "${group.compressedName}AsUpdateDomainCount": ${group.platformUpdateDomainCount},
           </#if>
       </#list>
-      "sshKeyPath" : "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]"
+      "sshKeyPath" : "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+      "loadBalancerName": "LoadBalancer"
   	},
     "resources": [
             <#list igs as group>
@@ -383,14 +384,14 @@
              <#if (instanceGroup_index + 1) != groups?size>,</#if>
              </#list>
             <#list loadBalancers as loadBalancer>
-                {
+                ,{
                   "apiVersion": "2020-05-01",
                   "type": "Microsoft.Network/loadBalancers",
                   "dependsOn": [
-                    "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', ${loadBalancer.name}, 'address-pool')]"
+                    "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
                   ],
                   "location": "[parameters('region')]",
-                  "name": "${loadBalancer.name}",
+                  "name": "variables('loadBalancerName')",
                   "properties": {
                     "backendAddressPools": [
                       {
@@ -425,48 +426,29 @@
                     "inboundNatPools": [],
                     "inboundNatRules": [],
                     "loadBalancingRules": [
-                      {
-                        "name": "${loadBalancer.name}-knox-rule",
-                        "properties": {
-                          "backendAddressPool": {
-                            "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', ${loadBalancer.name}, 'address-pool')]"
-                          },
-                          "backendPort": 8443,
-                          "enableFloatingIP": false,
-                          "enableTcpReset": false,
-                          "frontendIPConfiguration": {
-                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/frontendIPConfigurations/static-internal-ip-address')]"
-                          },
-                          "frontendPort": 8443,
-                          "idleTimeoutInMinutes": 4,
-                          "loadDistribution": "Default",
-                          "probe": {
-                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/probes/knox-health-probe')]"
-                          },
-                          "protocol": "Tcp"
-                        }
-                      },
-                      {
-                        "name": "${loadBalancer.name}-traffic-rule",
-                        "properties": {
-                          "backendAddressPool": {
-                            "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', ${loadBalancer.name}, 'address-pool')]"
-                          },
-                          "backendPort": 443,
-                          "enableFloatingIP": false,
-                          "enableTcpReset": false,
-                          "frontendIPConfiguration": {
-                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/frontendIPConfigurations/static-internal-ip-address')]"
-                          },
-                          "frontendPort": 443,
-                          "idleTimeoutInMinutes": 4,
-                          "loadDistribution": "Default",
-                          "probe": {
-                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name}), '/probes/https-traffic-health-probe')]"
-                          },
-                          "protocol": "Tcp"
-                        }
-                      }
+                        <#list loadBalancer.rules as rule>
+                            {
+                                "name": "variables('loadBalancerName')-knox-rule",
+                                "properties": {
+                                    "backendAddressPool": {
+                                        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
+                                    },
+                                    "backendPort": ${rule.backendPort},
+                                    "enableFloatingIP": false,
+                                    "enableTcpReset": false,
+                                    "frontendIPConfiguration": {
+                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIPConfigurations/static-internal-ip-address')]"
+                                    },
+                                    "frontendPort": ${rule.frontendPort},
+                                    "idleTimeoutInMinutes": 4,
+                                    "loadDistribution": "Default",
+                                    "probe": {
+                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/knox-health-probe')]"
+                                    },
+                                    "protocol": "Tcp"
+                                }
+                            },
+                        </#list>
                     ],
                     "probes": [
                       {
@@ -496,9 +478,9 @@
                 {
                   "apiVersion": "2020-05-01",
                   "dependsOn": [
-                    "[resourceId('Microsoft.Network/loadBalancers', ${loadBalancer.name})]"
+                    "[resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName'))]"
                   ],
-                  "name": "[concat(${loadBalancer.name}, '/address-pool')]",
+                  "name": "[concat(variables('loadBalancerName'), '/address-pool')]",
                   "properties": {},
                   "type": "Microsoft.Network/loadBalancers/backendAddressPools"
                 }

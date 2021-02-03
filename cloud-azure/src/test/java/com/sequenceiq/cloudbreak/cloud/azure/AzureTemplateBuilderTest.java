@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,6 +52,7 @@ import com.sequenceiq.cloudbreak.cloud.context.CloudContext;
 import com.sequenceiq.cloudbreak.cloud.model.AvailabilityZone;
 import com.sequenceiq.cloudbreak.cloud.model.CloudCredential;
 import com.sequenceiq.cloudbreak.cloud.model.CloudInstance;
+import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancer;
 import com.sequenceiq.cloudbreak.cloud.model.CloudStack;
 import com.sequenceiq.cloudbreak.cloud.model.CloudVolumeUsageType;
 import com.sequenceiq.cloudbreak.cloud.model.Group;
@@ -65,10 +67,12 @@ import com.sequenceiq.cloudbreak.cloud.model.Region;
 import com.sequenceiq.cloudbreak.cloud.model.Security;
 import com.sequenceiq.cloudbreak.cloud.model.SecurityRule;
 import com.sequenceiq.cloudbreak.cloud.model.Subnet;
+import com.sequenceiq.cloudbreak.cloud.model.TargetGroupPortPair;
 import com.sequenceiq.cloudbreak.cloud.model.Volume;
 import com.sequenceiq.cloudbreak.util.FreeMarkerTemplateUtils;
 import com.sequenceiq.cloudbreak.util.Version;
 import com.sequenceiq.common.api.type.InstanceGroupType;
+import com.sequenceiq.common.api.type.LoadBalancerType;
 
 import freemarker.template.Configuration;
 
@@ -439,8 +443,7 @@ public class AzureTemplateBuilderTest {
 
         List<CloudLoadBalancer> loadBalancers = new ArrayList<>();
         CloudLoadBalancer loadBalancer = new CloudLoadBalancer(LoadBalancerType.PRIVATE);
-        loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(443, 443), new HashSet<>(groups));
-        loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(8443, 8443), new HashSet<>(groups));
+        loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(86753, 86753), new HashSet<>(groups));
         loadBalancers.add(loadBalancer);
 
         cloudStack = new CloudStack(groups, network, image, parameters, tags, azureTemplateBuilder.getTemplateString(),
@@ -458,6 +461,9 @@ public class AzureTemplateBuilderTest {
         //THEN
         gson.fromJson(templateString, Map.class);
         assertTrue(templateString.contains("\"type\": \"Microsoft.Network/loadBalancers\","));
+        assertTrue(templateString.contains("\"frontendPort\": 86753,"));
+        assertTrue(templateString.contains("\"backendPort\": 86753,"));
+
     }
 
     @Test
