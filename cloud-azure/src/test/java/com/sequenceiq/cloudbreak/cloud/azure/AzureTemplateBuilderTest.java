@@ -486,6 +486,8 @@ public class AzureTemplateBuilderTest {
         assertTrue(templateString.contains("\"frontendPort\": 86753,"));
         assertTrue(templateString.contains("\"backendPort\": 86753,"));
         assertTrue(templateString.contains("\"name\": \"port-86753-rule\","));
+        assertTrue(templateString.contains("\"name\": \"port-86753-probe\","));
+
     }
 
     @Test

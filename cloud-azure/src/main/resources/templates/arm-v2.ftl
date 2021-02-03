@@ -443,7 +443,7 @@
                                     "idleTimeoutInMinutes": 4,
                                     "loadDistribution": "Default",
                                     "probe": {
-                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/knox-health-probe')]"
+                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), 'port-${rule.backendPort}-probe')]"
                                     },
                                     "protocol": "Tcp"
                                 }
@@ -451,24 +451,17 @@
                         </#list>
                     ],
                     "probes": [
+                      <#list loadBalancer.probes as probe>
                       {
-                        "name": "https-traffic-health-probe",
+                        "name": "port-${probe.port}-probe",
                         "properties": {
                           "intervalInSeconds": 5,
                           "numberOfProbes": 2,
-                          "port": 443,
+                          "port": ${probe.port},
                           "protocol": "Tcp"
                         }
                       },
-                      {
-                        "name": "knox-health-probe",
-                        "properties": {
-                          "intervalInSeconds": 5,
-                          "numberOfProbes": 2,
-                          "port": 8443,
-                          "protocol": "Tcp"
-                        }
-                      }
+                      </#list>
                     ]
                   },
                   "sku": {
