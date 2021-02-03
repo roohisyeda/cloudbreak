@@ -403,22 +403,21 @@
                       {
                         "name": "LoadBalancerFrontEnd",
                         "properties": {
-                          "privateIPAddress": "10.124.208.16",
                           "privateIPAddressVersion": "IPv4",
-                          "privateIPAllocationMethod": "Static",
+                          "privateIPAllocationMethod": "Dynamic",
                           "subnet": {
-                            "id": "[concat(parameters('virtualNetworks_sdx_daily_externalid'), '/subnets/sdx-daily.external.0.westus2')]"
+                            <#-- todo: this is highly suspect to me, it's not clear how subnet name change when using an existingVPC -->
+                            "id": "[concat(variables('vnetID'), '/subnets/', parameters('subnet1Name'))]"
                           }
                         }
                       },
                       {
                         "name": "static-internal-ip-address",
                         "properties": {
-                          "privateIPAddress": "10.124.210.111",
                           "privateIPAddressVersion": "IPv4",
-                          "privateIPAllocationMethod": "Static",
+                          "privateIPAllocationMethod": "Dynamic",
                           "subnet": {
-                            "id": "[concat(parameters('virtualNetworks_sdx_daily_externalid'), '/subnets/sdx-daily.internal.0.westus2')]"
+                            "id": "[concat(variables('vnetID'), '/subnets/', parameters('subnet1Name'))]"
                           }
                         }
                       }
