@@ -50,7 +50,6 @@ public class AzureIDBrokerObjectStorageValidator {
         LOGGER.info("Validating Azure identities...");
         List<CloudFileSystemView> cloudFileSystems = spiFileSystem.getCloudFileSystems();
         if (Objects.nonNull(cloudFileSystems) && cloudFileSystems.size() > 0) {
-            PagedList<RoleAssignmentInner> roleAssignments = client.listRoleAssignments();
             for (CloudFileSystemView cloudFileSystemView : cloudFileSystems) {
                 CloudAdlsGen2View cloudFileSystem = (CloudAdlsGen2View) cloudFileSystemView;
                 String managedIdentityId = cloudFileSystem.getManagedIdentity();
@@ -59,9 +58,10 @@ public class AzureIDBrokerObjectStorageValidator {
                 if (identity != null) {
                     CloudIdentityType cloudIdentityType = cloudFileSystem.getCloudIdentityType();
                     if (CloudIdentityType.ID_BROKER.equals(cloudIdentityType)) {
+                        PagedList<RoleAssignmentInner> roleAssignments = client.listRoleAssignments();
                         validateIDBroker(client, roleAssignments, identity, cloudFileSystem, resultBuilder);
                     } else if (CloudIdentityType.LOG.equals(cloudIdentityType)) {
-                        validateLog(client, roleAssignments, identity, cloudFileSystem, resultBuilder);
+                        validateLog(client, identity, cloudFileSystem, resultBuilder);
                     }
                 } else {
                     addError(resultBuilder, String.format("Identity with id %s does not exist in the given Azure subscription.", managedIdentityId));
@@ -82,7 +82,7 @@ public class AzureIDBrokerObjectStorageValidator {
 
     }
 
-    private void validateLog(AzureClient client, PagedList<RoleAssignmentInner> roleAssignments, Identity identity, CloudAdlsGen2View cloudFileSystem,
+    private void validateLog(AzureClient client, Identity identity, CloudAdlsGen2View cloudFileSystem,
             ValidationResultBuilder resultBuilder) {
         LOGGER.debug(String.format("Validating logger identity %s", identity.principalId()));
 
@@ -96,8 +96,9 @@ public class AzureIDBrokerObjectStorageValidator {
                 addError(resultBuilder, String.format("Storage account with name %s not found.", storageAccountName));
                 return;
             }
+            List<RoleAssignmentInner> roleAssignments = client.listRoleAssignmentsByScopeInner(storageAccountIdOptional.get());
             ResourceId storageAccountResourceId = ResourceId.fromString(storageAccountIdOptional.get());
-            PagedList<RoleAssignmentInner> roleAssignmentsForSubscription =
+            List<RoleAssignmentInner> roleAssignmentsForSubscription =
                     getRoleAssignmentsOfSubscription(roleAssignments, storageAccountResourceId.subscriptionId(), client);
             validateRoleAssigmentAndScope(roleAssignmentsForSubscription, resultBuilder, identity,
                     List.of(storageAccountName, storageAccountResourceId.resourceGroupName(), storageAccountResourceId.subscriptionId()));
@@ -107,8 +108,8 @@ public class AzureIDBrokerObjectStorageValidator {
         LOGGER.info("Validating logger identity is finished");
     }
 
-    private PagedList<RoleAssignmentInner> getRoleAssignmentsOfSubscription(
-            PagedList<RoleAssignmentInner> roleAssignmentsOfCurrentSubscription, String targetSubscriptionId, AzureClient client) {
+    private List<RoleAssignmentInner> getRoleAssignmentsOfSubscription(
+            List<RoleAssignmentInner> roleAssignmentsOfCurrentSubscription, String targetSubscriptionId, AzureClient client) {
         if (client.getCurrentSubscription().subscriptionId().equals(targetSubscriptionId)) {
             return roleAssignmentsOfCurrentSubscription;
         }
@@ -150,7 +151,7 @@ public class AzureIDBrokerObjectStorageValidator {
                         String.format("Identity with id %s has no role assignment.", identityWithNoAssignment.id())));
     }
 
-    private void validateRoleAssigmentAndScope(PagedList<RoleAssignmentInner> roleAssignments, ValidationResultBuilder resultBuilder, Identity identity,
+    private void validateRoleAssigmentAndScope(List<RoleAssignmentInner> roleAssignments, ValidationResultBuilder resultBuilder, Identity identity,
             List<String> scopes) {
         if (Objects.nonNull(roleAssignments) && !roleAssignments.isEmpty()) {
             if (!hasMatchingRoles(roleAssignments, identity, scopes)) {
@@ -162,7 +163,7 @@ public class AzureIDBrokerObjectStorageValidator {
         }
     }
 
-    private boolean hasMatchingRoles(PagedList<RoleAssignmentInner> roleAssignments, Identity identity, List<String> scopes) {
+    private boolean hasMatchingRoles(List<RoleAssignmentInner> roleAssignments, Identity identity, List<String> scopes) {
         long numberOfMatchingRoles = 0;
         for (String scope : scopes) {
             numberOfMatchingRoles += roleAssignments.stream()
