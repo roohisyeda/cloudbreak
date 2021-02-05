@@ -446,7 +446,7 @@
                                     },
                                     "protocol": "Tcp"
                                 }
-                            },
+                            }<#if (rule_index + 1) != loadBalancer.rules?size>,</#if>
                         </#list>
                     ],
                     "probes": [
@@ -459,7 +459,7 @@
                           "port": ${probe.port},
                           "protocol": "Tcp"
                         }
-                      },
+                      }<#if (probe_index + 1) != loadBalancer.probes?size>,</#if>
                       </#list>
                     ]
                   },
