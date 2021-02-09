@@ -96,6 +96,13 @@ import freemarker.template.Configuration;
  * <pre>{@code
  *     assumeTrue(isTemplateVersionGreaterOrEqualThan("2.7.3.0"));
  * }</pre>
+ *
+ * It's useful to capture the JSON strings printed to the console, then provide them to the Azure CLI's template deployment
+ * validation commands.
+ * Example:
+ * <pre>{@code
+ * az deployment group validate --resource-group bderriso-rg --template-file arm-template-from-test
+ * }</pre>
  */
 @RunWith(Parameterized.class)
 public class AzureTemplateBuilderTest {
@@ -117,6 +124,8 @@ public class AzureTemplateBuilderTest {
     private static final int ROOT_VOLUME_SIZE = 50;
 
     private static final Map<String, Boolean> ACCELERATED_NETWORK_SUPPORT = Map.of("m1.medium", false);
+
+    private static final String SUBNET_CIDR = "10.0.0.0/24";
 
     @Mock
     private AzureUtils azureUtils;
@@ -222,7 +231,7 @@ public class AzureTemplateBuilderTest {
                 .withName("thisisaverylongazureresourcenamewhichneedstobeshortened")
                 .withCrn("crn")
                 .withPlatform("dummy1")
-                .withLocation(Location.location(Region.region("EU"), new AvailabilityZone("availabilityZone")))
+                .withLocation(Location.location(Region.region("westus2"), new AvailabilityZone("availabilityZone")))
                 .withUserId(USER_ID)
                 .withWorkspaceId(WORKSPACE_ID)
                 .build();
@@ -238,7 +247,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildNoPublicIpFirewallWithTags() throws IOException {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         when(azureUtils.isPrivateIp(any())).then(invocation -> true);
         when(azureAcceleratedNetworkValidator.validate(any())).thenReturn(ACCELERATED_NETWORK_SUPPORT);
         Map<String, String> parameters = new HashMap<>();
@@ -277,7 +286,7 @@ public class AzureTemplateBuilderTest {
         when(azureUtils.getCustomSubnetIds(any())).thenReturn(Collections.singletonList("existingSubnet"));
         when(azureAcceleratedNetworkValidator.validate(any())).thenReturn(ACCELERATED_NETWORK_SUPPORT);
 
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         when(azureUtils.isPrivateIp(any())).then(invocation -> true);
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
@@ -304,7 +313,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildNoPublicIpButFirewall() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         when(azureUtils.isPrivateIp(any())).then(invocation -> true);
         when(azureAcceleratedNetworkValidator.validate(any())).thenReturn(ACCELERATED_NETWORK_SUPPORT);
 
@@ -334,7 +343,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildWithPublicIpAndFirewall() throws IOException {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         when(azureUtils.isPrivateIp(any())).then(invocation -> false);
         when(azureAcceleratedNetworkValidator.validate(any())).thenReturn(ACCELERATED_NETWORK_SUPPORT);
 
@@ -368,7 +377,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildWithInstanceGroupTypeCore() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -396,7 +405,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildWithInstanceGroupTypeCoreShouldNotContainsGatewayCustomData() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -424,7 +433,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildWithInstanceGroupTypeGateway() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -453,7 +462,7 @@ public class AzureTemplateBuilderTest {
     public void buildWithGatewayInstanceGroupTypeAndLoadBalancer() {
         //GIVEN
         assumeTrue(isTemplateVersionGreaterOrEqualThan("2.7.3.0"));
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -493,7 +502,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildWithInstanceGroupTypeGatewayShouldNotContainsCoreCustomData() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -521,7 +530,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildWithInstanceGroupTypeGatewayAndCore() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -552,7 +561,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildTestResourceGroupName() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -586,7 +595,7 @@ public class AzureTemplateBuilderTest {
         when(azureUtils.getCustomNetworkId(any())).thenReturn("existingNetworkName");
         when(azureUtils.getCustomResourceGroupName(any())).thenReturn("existingResourceGroup");
         when(azureUtils.getCustomSubnetIds(any())).thenReturn(Collections.singletonList("existingSubnet"));
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -618,7 +627,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildTestExistingSubnetNameNotInTemplate() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -648,7 +657,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildTestVirtualNetworkNamePrefix() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -678,7 +687,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildTestSubnet1Prefix() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -709,7 +718,7 @@ public class AzureTemplateBuilderTest {
     public void buildTestDisksFor1xVersions() {
         //GIVEN
         assumeFalse(isTemplateVersionGreaterOrEqualThan1165());
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -740,7 +749,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildTestDisksOnAllVersionsAndVerifyOsDisks() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -771,7 +780,7 @@ public class AzureTemplateBuilderTest {
     public void buildTestDisksWhenTheVersion210OrGreater() {
         //GIVEN
         assumeTrue(isTemplateVersionGreaterOrEqualThan("2.10.0.0"));
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");
@@ -802,7 +811,7 @@ public class AzureTemplateBuilderTest {
     @Test
     public void buildTestAvailabilitySetInTemplate() {
         //GIVEN
-        Network network = new Network(new Subnet("testSubnet"));
+        Network network = new Network(new Subnet(SUBNET_CIDR));
         Map<String, String> parameters = new HashMap<>();
         parameters.put("persistentStorage", "persistentStorageTest");
         parameters.put("attachedStorageOption", "attachedStorageOptionTest");

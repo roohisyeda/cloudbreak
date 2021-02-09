@@ -90,7 +90,7 @@
           </#if>
       </#list>
       "sshKeyPath" : "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-      "loadBalancerName": "LoadBalancer"
+      "loadBalancerName": "myCustomLoadBalancer"
   	},
     "resources": [
             <#list igs as group>
@@ -287,6 +287,14 @@
                                    }
                                    </#if>
                                }
+                                <#if loadbalancers?? && loadbalancers?size > 0>,
+                               "loadBalancerBackendAddressPools": [
+                                    {
+<#--                 todo: parameterize this address-pool name-->
+                                        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
+                                    }
+                                ]
+                                </#if>
                            }
                        ]
                    }
@@ -387,14 +395,13 @@
                 ,{
                   "apiVersion": "2020-05-01",
                   "type": "Microsoft.Network/loadBalancers",
-                  "dependsOn": [
-                    "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
-                  ],
+                  "dependsOn": [],
                   "location": "[parameters('region')]",
                   "name": "variables('loadBalancerName')",
                   "properties": {
                     "backendAddressPools": [
                       {
+<#--                todo: make this name parameterized, and include it in the NICs above-->
                         "name": "address-pool",
                         "properties": {}
                       }
@@ -430,6 +437,7 @@
                                 "name": "${rule.name}",
                                 "properties": {
                                     "backendAddressPool": {
+<#--                            todo: parameterize this address-pool -->
                                         "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
                                     },
                                     "backendPort": ${rule.backendPort},
@@ -442,7 +450,7 @@
                                     "idleTimeoutInMinutes": 4,
                                     "loadDistribution": "Default",
                                     "probe": {
-                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), 'port-${rule.backendPort}-probe')]"
+                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers/probes', variables('loadBalancerName')), 'port-${rule.backendPort}-probe')]"
                                     },
                                     "protocol": "Tcp"
                                 }
@@ -466,15 +474,6 @@
                   "sku": {
                     "name": "Basic"
                   }
-                },
-                {
-                  "apiVersion": "2020-05-01",
-                  "dependsOn": [
-                    "[resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName'))]"
-                  ],
-                  "name": "[concat(variables('loadBalancerName'), '/address-pool')]",
-                  "properties": {},
-                  "type": "Microsoft.Network/loadBalancers/backendAddressPools"
                 }
             </#list>
      	]
