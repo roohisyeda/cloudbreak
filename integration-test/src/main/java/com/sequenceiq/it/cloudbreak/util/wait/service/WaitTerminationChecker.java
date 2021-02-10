@@ -52,8 +52,10 @@ public class WaitTerminationChecker<T extends WaitObject> extends ExceptionCheck
             throw new TestFailException(String.format("Wait operation timed out! '%s' cluster termination failed. Cluster status: '%s' " +
                     "statusReason: '%s'", name, actualStatuses, actualStatusReasons));
         } catch (Exception e) {
-            LOGGER.error("Wait operation timed out! Failed to get cluster status or statusReason: {}", e.getMessage(), e);
-            throw new TestFailException("Wait operation timed out! Failed to get cluster status or statusReason", e);
+            LOGGER.error("'{}' operation has been timed out! Cluster '{}' is in '{}' state, because of {}", waitObject.getClass().getSimpleName(),
+                    waitObject.getName(), waitObject.actualStatuses(), e.getCause());
+            throw new TestFailException(String.format("'%s' operation has been timed out! Cluster '%s' is in '%s' state, because of %s",
+                    waitObject.getClass().getSimpleName(), waitObject.getName(), waitObject.actualStatuses(), e.getCause()), e);
         }
     }
 
