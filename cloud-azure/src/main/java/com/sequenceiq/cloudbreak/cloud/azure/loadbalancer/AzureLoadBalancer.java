@@ -14,7 +14,7 @@ public final class AzureLoadBalancer {
     // I think we should _create_ a probe, then associate it with a rule and add it to the Load Balancer's list of probes.
     private final List<AzureLoadBalancingRule> rules;
     private final Set<AzureLoadBalancerProbe> probes;
-    private final String name = "MyLoadBalancer"; //todo: pass this in
+    private final String name = "MyLoadBalancer"; //todo: pass this in rather than hardcoding
 
     public AzureLoadBalancer(CloudLoadBalancer cloudLoadBalancer) {
         rules = cloudLoadBalancer.getPortToTargetGroupMapping()

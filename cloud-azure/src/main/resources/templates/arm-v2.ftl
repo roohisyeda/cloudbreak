@@ -89,8 +89,7 @@
           "${group.compressedName}AsUpdateDomainCount": ${group.platformUpdateDomainCount},
           </#if>
       </#list>
-      "sshKeyPath" : "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-      "loadBalancerName": "myCustomLoadBalancer"
+      "sshKeyPath" : "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]"
   	},
     "resources": [
             <#list igs as group>
@@ -287,10 +286,10 @@
                                    }
                                    </#if>
                                }
-                                <#if loadbalancers?? && loadbalancers?size > 0>,
+                                <#if instanceGroup == "GATEWAY" && loadBalancers?? && (loadBalancers?size > 0)>,
                                "loadBalancerBackendAddressPools": [
                                     {
-<#--                 todo: parameterize this address-pool name-->
+                                        <#--This is adding the NIC to all load balancer backendaddress pools, which is probably not what we want long term.-->
                                         <#list loadBalancers as loadBalancer>
                                         "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', '${loadBalancer.name}', 'address-pool')]"
                                         <#if (loadBalancer_index + 1) != loadBalancers?size>,</#if>
@@ -400,7 +399,7 @@
                   "type": "Microsoft.Network/loadBalancers",
                   "dependsOn": [],
                   "location": "[parameters('region')]",
-                  "name": "[variables('loadBalancerName')]",
+                  "name": "${loadBalancer.name}",
                   "properties": {
                     "backendAddressPools": [
                       {
