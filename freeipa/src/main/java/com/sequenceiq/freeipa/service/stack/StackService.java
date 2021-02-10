@@ -165,4 +165,8 @@ public class StackService implements ResourceCrnAndNameProvider {
     public EnumSet<Crn.ResourceType> getCrnTypes() {
         return EnumSet.of(Crn.ResourceType.FREEIPA, Crn.ResourceType.ENVIRONMENT);
     }
+
+    public Set<Stack> getAllAliveWithImages() {
+        return stackRepository.getAllAliveWithImages();
+    }
 }

@@ -41,6 +41,7 @@ import com.sequenceiq.it.cloudbreak.dto.util.DeploymentPreferencesTestDto;
 import com.sequenceiq.it.cloudbreak.dto.util.NotificationTestingTestDto;
 import com.sequenceiq.it.cloudbreak.dto.util.RenewDistroXCertificateTestDto;
 import com.sequenceiq.it.cloudbreak.dto.util.StackMatrixTestDto;
+import com.sequenceiq.it.cloudbreak.dto.util.UsedImagesTestDto;
 import com.sequenceiq.it.cloudbreak.dto.util.VersionCheckTestDto;
 import com.sequenceiq.it.cloudbreak.util.wait.service.WaitObject;
 import com.sequenceiq.it.cloudbreak.util.wait.service.cloudbreak.CloudbreakWaitObject;
@@ -192,7 +193,8 @@ public class CloudbreakClient extends MicroserviceClient {
                 CheckRightTestDto.class.getSimpleName(),
                 CheckResourceRightTestDto.class.getSimpleName(),
                 RenewDistroXCertificateTestDto.class.getSimpleName(),
-                ImageCatalogTestDto.class.getSimpleName());
+                ImageCatalogTestDto.class.getSimpleName(),
+                UsedImagesTestDto.class.getSimpleName());
     }
 }
 

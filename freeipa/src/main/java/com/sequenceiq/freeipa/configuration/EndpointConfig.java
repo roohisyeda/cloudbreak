@@ -23,6 +23,7 @@ import com.sequenceiq.freeipa.controller.DnsV1Controller;
 import com.sequenceiq.freeipa.controller.FreeIpaV1Controller;
 import com.sequenceiq.freeipa.controller.OperationV1Controller;
 import com.sequenceiq.freeipa.controller.UserV1Controller;
+import com.sequenceiq.freeipa.controller.UtilV1Controller;
 import com.sequenceiq.freeipa.controller.mapper.DefaultExceptionMapper;
 import com.sequenceiq.freeipa.controller.mapper.WebApplicaitonExceptionMapper;
 import com.sequenceiq.freeipa.kerberos.v1.KerberosConfigV1Controller;
@@ -43,7 +44,7 @@ public class EndpointConfig extends ResourceConfig {
             UserV1Controller.class, ClientTestV1Controller.class, FreeIpaV1Controller.class, LdapConfigV1Controller.class,
             KerberosConfigV1Controller.class, KerberosMgmtV1Controller.class, DnsV1Controller.class, OperationV1Controller.class,
             FlowController.class, FlowPublicController.class, AuthorizationInfoController.class, DiagnosticsV1Controller.class,
-            CDPStructuredEventV1Controller.class);
+            CDPStructuredEventV1Controller.class, UtilV1Controller.class);
 
     @Value("${info.app.version:unspecified}")
     private String applicationVersion;

@@ -8,5 +8,7 @@ public interface Actor {
 
     CloudbreakUser create(String tenantName, String username);
 
+    CloudbreakUser createInternal(String tenantName);
+
     CloudbreakUser useRealUmsUser(String key);
 }

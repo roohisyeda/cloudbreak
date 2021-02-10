@@ -100,7 +100,7 @@ public interface StackRepository extends WorkspaceResourceRepository<Stack, Long
             + "FROM Stack s LEFT JOIN s.cluster c LEFT JOIN s.workspace WHERE s.terminated = null AND (s.type is not 'TEMPLATE' OR s.type is null)")
     List<StackTtlView> findAllAlive();
 
-    @Query("SELECT s FROM Stack s LEFT JOIN FETCH s.instanceGroups ig "
+    @Query("SELECT s FROM Stack s LEFT JOIN FETCH s.instanceGroups ig LEFT JOIN FETCH ig.instanceMetaData im "
             + "WHERE s.terminated = null AND (s.type is not 'TEMPLATE' OR s.type is null)")
     Set<Stack> findAllAliveWithInstanceGroups();
 

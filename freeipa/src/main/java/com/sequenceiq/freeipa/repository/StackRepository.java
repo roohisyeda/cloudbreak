@@ -96,4 +96,7 @@ public interface StackRepository extends AccountAwareResourceRepository<Stack, L
             " WHERE s.accountId = :accountId AND s.terminated = -1 AND s.resourceCrn IN (:resourceCrns)")
     List<ResourceCrnAndNameView> findNamesByResourceCrnAndAccountId(@Param("resourceCrns") Collection<String> resourceCrns,
             @Param("accountId") String accountId);
+
+    @Query("SELECT s FROM Stack s LEFT JOIN FETCH s.image i WHERE s.terminated = -1")
+    Set<Stack> getAllAliveWithImages();
 }
