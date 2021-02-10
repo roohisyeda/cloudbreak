@@ -58,6 +58,7 @@ import com.sequenceiq.cloudbreak.service.cluster.ClusterDBValidationService;
 import com.sequenceiq.cloudbreak.service.stack.StackApiViewService;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
 import com.sequenceiq.cloudbreak.service.upgrade.ClusterUpgradeAvailabilityService;
+import com.sequenceiq.cloudbreak.service.upgrade.RecoveryService;
 import com.sequenceiq.cloudbreak.service.upgrade.UpgradeService;
 import com.sequenceiq.cloudbreak.service.user.UserService;
 import com.sequenceiq.cloudbreak.service.workspace.WorkspaceService;
@@ -105,6 +106,9 @@ public class StackOperations implements ResourceBasedCrnProvider {
 
     @Inject
     private UpgradeService upgradeService;
+
+    @Inject
+    private RecoveryService recoveryService;
 
     @Inject
     private ClusterUpgradeAvailabilityService clusterUpgradeAvailabilityService;
@@ -232,6 +236,11 @@ public class StackOperations implements ResourceBasedCrnProvider {
     public FlowIdentifier upgradeCluster(@NotNull NameOrCrn nameOrCrn, Long workspaceId, String imageId) {
         LOGGER.debug("Starting to upgrade cluster: " + nameOrCrn);
         return upgradeService.upgradeCluster(workspaceId, nameOrCrn, imageId);
+    }
+
+    public FlowIdentifier recoverCluster(@NotNull NameOrCrn nameOrCrn, Long workspaceId) {
+        LOGGER.debug("Starting to recover cluster ({}) from failed upgrade", nameOrCrn);
+        return recoveryService.upgradeCluster(workspaceId, nameOrCrn);
     }
 
     public FlowIdentifier updateSalt(@NotNull NameOrCrn nameOrCrn, Long workspaceId) {
