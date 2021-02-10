@@ -13,14 +13,14 @@ import com.sequenceiq.cloudbreak.cloud.azure.client.AzureClient;
 @Component
 class AzureVmPublicIpProvider {
 
-    String getPublicIp(AzureClient azureClient, AzureUtils azureUtils, NetworkInterface networkInterface, String resourceGroup) {
+    String getPublicIp(AzureClient azureClient, NetworkInterface networkInterface, String resourceGroupName) {
         PublicIPAddress publicIpAddress = networkInterface.primaryIPConfiguration().getPublicIPAddress();
 
         List<LoadBalancerBackend> backends = networkInterface.primaryIPConfiguration().listAssociatedLoadBalancerBackends();
         List<LoadBalancerInboundNatRule> inboundNatRules = networkInterface.primaryIPConfiguration().listAssociatedLoadBalancerInboundNatRules();
         String publicIp = null;
         if (!backends.isEmpty() || !inboundNatRules.isEmpty()) {
-            publicIp = azureClient.getLoadBalancerIps(resourceGroup, azureUtils.getLoadBalancerId(resourceGroup)).get(0);
+            publicIp = azureClient.getLoadBalancerIps(resourceGroupName, AzureUtils.getLoadBalancerId(resourceGroupName)).get(0);
         }
 
         if (publicIpAddress != null && publicIpAddress.ipAddress() != null) {

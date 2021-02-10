@@ -109,7 +109,7 @@ public class AzureMetadataCollectorTest {
         when(azureClient.getFaultDomainNumber(RESOURCE_GROUP_NAME, INSTANCE_1)).thenReturn(FAULT_DOMAIN_COUNT);
         when(azureClient.getFaultDomainNumber(RESOURCE_GROUP_NAME, INSTANCE_2)).thenReturn(FAULT_DOMAIN_COUNT);
         when(azureClient.getFaultDomainNumber(RESOURCE_GROUP_NAME, INSTANCE_3)).thenReturn(FAULT_DOMAIN_COUNT);
-        when(azureVmPublicIpProvider.getPublicIp(eq(azureClient), eq(azureUtils), any(), eq(RESOURCE_GROUP_NAME))).thenReturn(PUBLIC_IP);
+        when(azureVmPublicIpProvider.getPublicIp(eq(azureClient), any(), eq(RESOURCE_GROUP_NAME))).thenReturn(PUBLIC_IP);
         when(cloudContext.getPlatform()).thenReturn(Platform.platform(PLATFORM));
         when(cloudContext.getLocation()).thenReturn(Location.location(Region.region(REGION), null));
 

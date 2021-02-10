@@ -77,6 +77,8 @@ public class AzureTemplateBuilder {
             String rootDiskStorage = azureStorage.getImageStorageName(armCredentialView, cloudContext, cloudStack);
             AzureSecurityView armSecurityView = new AzureSecurityView(cloudStack.getGroups());
 
+            final String resourceGroupName = azureUtils.getCustomResourceGroupName(network);
+
             // needed for pre 1.16.5 templates and Load balancer setup on Medium duty datalakes.
             model.put("existingSubnetName", azureUtils.getCustomSubnetIds(network).stream().findFirst().orElse(""));
 
@@ -96,14 +98,14 @@ public class AzureTemplateBuilder {
             model.put("gatewaycustomData", base64EncodedUserData(cloudStack.getImage().getUserDataByType(InstanceGroupType.GATEWAY)));
             model.put("disablePasswordAuthentication", !azureInstanceCredentialView.passwordAuthenticationRequired());
             model.put("existingVPC", azureUtils.isExistingNetwork(network));
-            model.put("resourceGroupName", azureUtils.getCustomResourceGroupName(network));
+            model.put("resourceGroupName", resourceGroupName);
             model.put("existingVNETName", azureUtils.getCustomNetworkId(network));
             model.put("noPublicIp", azureUtils.isPrivateIp(network));
             model.put("noFirewallRules", false);
             model.put("userDefinedTags", cloudStack.getTags());
             model.put("acceleratedNetworkEnabled", azureAcceleratedNetworkValidator.validate(armStack));
             model.put("isUpscale", UPSCALE.equals(azureInstanceTemplateOperation));
-            model.put("loadBalancers", cloudStack.getLoadBalancers().stream().map(lb -> new AzureLoadBalancer(lb)).collect(toList()));
+            model.put("loadBalancers", cloudStack.getLoadBalancers().stream().map(lb -> new AzureLoadBalancer(lb, resourceGroupName)).collect(toList()));
             String generatedTemplate = freeMarkerTemplateUtils.processTemplateIntoString(getTemplate(cloudStack), model);
             LOGGER.info("Generated Arm template: {}", generatedTemplate);
             return generatedTemplate;

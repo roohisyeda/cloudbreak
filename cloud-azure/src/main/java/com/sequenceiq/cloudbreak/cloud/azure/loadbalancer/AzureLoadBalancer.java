@@ -1,5 +1,6 @@
 package com.sequenceiq.cloudbreak.cloud.azure.loadbalancer;
 
+import com.sequenceiq.cloudbreak.cloud.azure.AzureUtils;
 import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancer;
 
 import java.util.Collection;
@@ -14,9 +15,9 @@ public final class AzureLoadBalancer {
     // I think we should _create_ a probe, then associate it with a rule and add it to the Load Balancer's list of probes.
     private final List<AzureLoadBalancingRule> rules;
     private final Set<AzureLoadBalancerProbe> probes;
-    private final String name = "MyLoadBalancer"; //todo: pass this in rather than hardcoding
+    private final String name;
 
-    public AzureLoadBalancer(CloudLoadBalancer cloudLoadBalancer) {
+    public AzureLoadBalancer(CloudLoadBalancer cloudLoadBalancer, String resourceGroupName) {
         rules = cloudLoadBalancer.getPortToTargetGroupMapping()
                 .keySet()
                 .stream()
@@ -27,6 +28,8 @@ public final class AzureLoadBalancer {
         probes = rules.stream()
                 .map(AzureLoadBalancingRule::getProbe)
                 .collect(toSet());
+
+        this.name = AzureUtils.getLoadBalancerId(resourceGroupName);
     }
 
     public Collection<AzureLoadBalancingRule> getRules() {

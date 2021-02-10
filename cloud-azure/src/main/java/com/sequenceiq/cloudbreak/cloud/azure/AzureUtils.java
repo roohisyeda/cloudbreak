@@ -122,8 +122,8 @@ public class AzureUtils {
         sb.delete(j, sb.length());
     }
 
-    public String getLoadBalancerId(String stackName) {
-        return String.format("%s%s", stackName, "lb");
+    public static String getLoadBalancerId(String resourceGroupName) {
+        return String.format("%s%s", resourceGroupName, "lb");
     }
 
     public String getPrivateInstanceId(String stackName, String groupName, String privateId) {
