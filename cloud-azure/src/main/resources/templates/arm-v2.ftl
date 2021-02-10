@@ -291,7 +291,10 @@
                                "loadBalancerBackendAddressPools": [
                                     {
 <#--                 todo: parameterize this address-pool name-->
-                                        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
+                                        <#list loadBalancers as loadBalancer>
+                                        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', '${loadBalancer.name}', 'address-pool')]"
+                                        <#if (loadBalancer_index + 1) != loadBalancers?size>,</#if>
+                                        </#list>
                                     }
                                 ]
                                 </#if>
@@ -397,7 +400,7 @@
                   "type": "Microsoft.Network/loadBalancers",
                   "dependsOn": [],
                   "location": "[parameters('region')]",
-                  "name": "variables('loadBalancerName')",
+                  "name": "[variables('loadBalancerName')]",
                   "properties": {
                     "backendAddressPools": [
                       {
@@ -438,19 +441,19 @@
                                 "properties": {
                                     "backendAddressPool": {
 <#--                            todo: parameterize this address-pool -->
-                                        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('loadBalancerName'), 'address-pool')]"
+                                        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', '${loadBalancer.name}', 'address-pool')]"
                                     },
                                     "backendPort": ${rule.backendPort},
                                     "enableFloatingIP": false,
                                     "enableTcpReset": false,
                                     "frontendIPConfiguration": {
-                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIPConfigurations/static-internal-ip-address')]"
+                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', '${loadBalancer.name}'), '/frontendIPConfigurations/static-internal-ip-address')]"
                                     },
                                     "frontendPort": ${rule.frontendPort},
                                     "idleTimeoutInMinutes": 4,
                                     "loadDistribution": "Default",
                                     "probe": {
-                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers/probes', variables('loadBalancerName')), 'port-${rule.backendPort}-probe')]"
+                                        "id": "[resourceId('Microsoft.Network/loadBalancers/probes', '${loadBalancer.name}', '${rule.probe.name}')]"
                                     },
                                     "protocol": "Tcp"
                                 }
@@ -460,7 +463,7 @@
                     "probes": [
                       <#list loadBalancer.probes as probe>
                       {
-                        "name": "port-${probe.port}-probe",
+                        "name": "${probe.name}",
                         "properties": {
                           "intervalInSeconds": 5,
                           "numberOfProbes": 2,

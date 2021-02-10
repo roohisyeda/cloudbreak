@@ -1,23 +1,18 @@
 package com.sequenceiq.cloudbreak.cloud.azure.loadbalancer;
 
+import com.sequenceiq.cloudbreak.cloud.model.TargetGroupPortPair;
+
 public final class AzureLoadBalancingRule {
     private final String name;
     private final int backendPort;
     private final int frontendPort;
+    private final AzureLoadBalancerProbe probe;
 
-    /**
-     * Create a load balancing rule where the backend and frontend port are the same.
-     *
-     * @param port the port to use for the backend and frontend of this rule.
-     */
-    public AzureLoadBalancingRule (int port) {
-        this(defaultNameFromPort(port), port, port);
-    }
-
-    public AzureLoadBalancingRule (String name, int backendPort, int frontendPort) {
-        this.backendPort = backendPort;
-        this.frontendPort = frontendPort;
-        this.name = name;
+    public AzureLoadBalancingRule (TargetGroupPortPair portPair) {
+        this.backendPort = portPair.getTrafficPort();
+        this.frontendPort = portPair.getTrafficPort();
+        this.name = defaultNameFromPort(portPair.getTrafficPort());
+        this.probe = new AzureLoadBalancerProbe(portPair.getHealthCheckPort());
     }
 
     private static String defaultNameFromPort(int port) {
@@ -34,5 +29,9 @@ public final class AzureLoadBalancingRule {
 
     public int getFrontendPort() {
         return frontendPort;
+    }
+
+    public AzureLoadBalancerProbe getProbe () {
+        return probe;
     }
 }

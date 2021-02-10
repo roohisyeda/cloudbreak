@@ -474,7 +474,7 @@ public class AzureTemplateBuilderTest {
 
         List<CloudLoadBalancer> loadBalancers = new ArrayList<>();
         CloudLoadBalancer loadBalancer = new CloudLoadBalancer(LoadBalancerType.PRIVATE);
-        loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(86753, 86753), new HashSet<>(groups));
+        loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(443, 8443), new HashSet<>(groups));
         loadBalancers.add(loadBalancer);
 
         cloudStack = new CloudStack(groups, network, image, parameters, tags, azureTemplateBuilder.getTemplateString(),
@@ -492,11 +492,10 @@ public class AzureTemplateBuilderTest {
         //THEN
         gson.fromJson(templateString, Map.class);
         assertTrue(templateString.contains("\"type\": \"Microsoft.Network/loadBalancers\","));
-        assertTrue(templateString.contains("\"frontendPort\": 86753,"));
-        assertTrue(templateString.contains("\"backendPort\": 86753,"));
-        assertTrue(templateString.contains("\"name\": \"port-86753-rule\","));
-        assertTrue(templateString.contains("\"name\": \"port-86753-probe\","));
-
+        assertTrue(templateString.contains("\"frontendPort\": 443,"));
+        assertTrue(templateString.contains("\"backendPort\": 443,"));
+        assertTrue(templateString.contains("\"name\": \"port-443-rule\","));
+        assertTrue(templateString.contains("\"name\": \"port-8443-probe\","));
     }
 
     @Test
