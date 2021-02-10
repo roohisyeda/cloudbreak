@@ -285,18 +285,18 @@
                                        "id": "[concat(variables('vnetID'),'/subnets/',parameters('subnet1Name'))]"
                                    }
                                    </#if>
+                                   <#if instanceGroup == "GATEWAY" && loadBalancers?? && (loadBalancers?size > 0)>,
+                                   "loadBalancerBackendAddressPools": [
+                                       {
+                                           <#--This is adding the NIC to all load balancer backend address pools, which is probably not what we want long term.-->
+                                           <#list loadBalancers as loadBalancer>
+                                           "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', '${loadBalancer.name}', 'address-pool')]"
+                                           <#if (loadBalancer_index + 1) != loadBalancers?size>,</#if>
+                                           </#list>
+                                       }
+                                   ]
+                                   </#if>
                                }
-                                <#if instanceGroup == "GATEWAY" && loadBalancers?? && (loadBalancers?size > 0)>,
-                               "loadBalancerBackendAddressPools": [
-                                    {
-                                        <#--This is adding the NIC to all load balancer backendaddress pools, which is probably not what we want long term.-->
-                                        <#list loadBalancers as loadBalancer>
-                                        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', '${loadBalancer.name}', 'address-pool')]"
-                                        <#if (loadBalancer_index + 1) != loadBalancers?size>,</#if>
-                                        </#list>
-                                    }
-                                ]
-                                </#if>
                            }
                        ]
                    }
@@ -414,25 +414,36 @@
                         "properties": {
                           "privateIPAddressVersion": "IPv4",
                           "privateIPAllocationMethod": "Dynamic",
+                          <#if existingVPC>
                           "subnet": {
-                            <#-- todo: this is highly suspect to me, it's not clear how subnet name change when using an existingVPC -->
-                            "id": "[concat(variables('vnetID'), '/subnets/', parameters('subnet1Name'))]"
+                            "id": "[concat(variables('vnetID'),'/subnets/', '${existingSubnetName}')]"
                           }
+                          <#else>
+                          "subnet": {
+                            "id": "[concat(variables('vnetID'),'/subnets/',parameters('subnet1Name'))]"
+                          }
+                          </#if>
                         }
-                      },
-                      {
+                        },
+                {
                         "name": "static-internal-ip-address",
                         "properties": {
                           "privateIPAddressVersion": "IPv4",
                           "privateIPAllocationMethod": "Dynamic",
+                          <#if existingVPC>
                           "subnet": {
-                            "id": "[concat(variables('vnetID'), '/subnets/', parameters('subnet1Name'))]"
+                            "id": "[concat(variables('vnetID'),'/subnets/', '${existingSubnetName}')]"
                           }
+                          <#else>
+                          "subnet": {
+                            "id": "[concat(variables('vnetID'),'/subnets/',parameters('subnet1Name'))]"
+                          }
+                          </#if>
                         }
                       }
-                    ],
-                    "inboundNatPools": [],
-                    "inboundNatRules": [],
+                ],
+                "inboundNatPools": [],
+                "inboundNatRules": [],
                     "loadBalancingRules": [
                         <#list loadBalancer.rules as rule>
                             {
