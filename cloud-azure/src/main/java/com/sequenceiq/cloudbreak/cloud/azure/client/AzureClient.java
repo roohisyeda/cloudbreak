@@ -666,6 +666,13 @@ public class AzureClient {
         return handleAuthException(() -> azure.loadBalancers().getByResourceGroup(resourceGroupName, loadBalancerName));
     }
 
+    /**
+     * Returns the IP addresses associated with a particular Load Balancer in a particular Azure Resource Group.
+     *
+     * @param resourceGroupName the name of the resource group containing the load balancer
+     * @param loadBalancerName the name of the load balancer
+     * @return IP addresses
+     */
     public List<String> getLoadBalancerIps(String resourceGroupName, String loadBalancerName) {
         List<String> ipList = new ArrayList<>();
         List<String> publicIpAddressIds = getLoadBalancer(resourceGroupName, loadBalancerName).publicIPAddressIds();

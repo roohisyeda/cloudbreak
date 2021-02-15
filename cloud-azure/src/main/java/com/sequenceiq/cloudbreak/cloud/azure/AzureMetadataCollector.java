@@ -64,6 +64,8 @@ public class AzureMetadataCollector implements MetadataCollector {
                 templateMap.keySet());
         azureVirtualMachineService.refreshInstanceViews(virtualMachinesByName);
         try {
+            // the bulk of this method is done in this for-each loop
+            // we're essentially mapping each InstanceTemplate to a CloudVmMetaDataStatus
             for (Entry<String, InstanceTemplate> instance : templateMap.entrySet()) {
                 VirtualMachine vm = virtualMachinesByName.get(instance.getKey());
                 //TODO: network interface is lazy, so we will fetch it for every instances
