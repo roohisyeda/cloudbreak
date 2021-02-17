@@ -17,7 +17,7 @@ public final class AzureLoadBalancer {
     private final Set<AzureLoadBalancerProbe> probes;
     private final String name;
 
-    public AzureLoadBalancer(CloudLoadBalancer cloudLoadBalancer, String resourceGroupName) {
+    public AzureLoadBalancer(CloudLoadBalancer cloudLoadBalancer) {
         rules = cloudLoadBalancer.getPortToTargetGroupMapping()
                 .keySet()
                 .stream()
@@ -29,7 +29,7 @@ public final class AzureLoadBalancer {
                 .map(AzureLoadBalancingRule::getProbe)
                 .collect(toSet());
 
-        this.name = AzureUtils.getLoadBalancerId(resourceGroupName);
+        this.name = cloudLoadBalancer.getType().toString() + "-lb";
     }
 
     public Collection<AzureLoadBalancingRule> getRules() {

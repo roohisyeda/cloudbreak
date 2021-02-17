@@ -1,14 +1,14 @@
 package com.sequenceiq.cloudbreak.cloud.azure;
 
-import java.util.List;
-
-import org.springframework.stereotype.Component;
-
 import com.microsoft.azure.management.network.LoadBalancerBackend;
 import com.microsoft.azure.management.network.LoadBalancerInboundNatRule;
 import com.microsoft.azure.management.network.NetworkInterface;
+import com.microsoft.azure.management.network.NicIPConfiguration;
 import com.microsoft.azure.management.network.PublicIPAddress;
 import com.sequenceiq.cloudbreak.cloud.azure.client.AzureClient;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 class AzureVmPublicIpProvider {
@@ -27,27 +27,34 @@ class AzureVmPublicIpProvider {
      * @param azureClient dependency for retrieving load balancer IPs
      * @param networkInterface the network interface to get public IPs for
      * @param resourceGroupName used to guess the load balancer name associated with this NIC
-     * @return
+     * @return the public IP address associated with the NIC, or {@code null}
      */
     String getPublicIp(AzureClient azureClient, NetworkInterface networkInterface, String resourceGroupName) {
-        PublicIPAddress publicIpAddress = networkInterface.primaryIPConfiguration().getPublicIPAddress();
+        NicIPConfiguration primaryIpConfiguration = networkInterface.primaryIPConfiguration();
+        PublicIPAddress publicIpAddress = primaryIpConfiguration.getPublicIPAddress();
 
-        // get LBs associated with the NIC
-        List<LoadBalancerBackend> backends = networkInterface.primaryIPConfiguration().listAssociatedLoadBalancerBackends();
-        List<LoadBalancerInboundNatRule> inboundNatRules = networkInterface.primaryIPConfiguration().listAssociatedLoadBalancerInboundNatRules();
-        String publicIp = null;
-
-        // if Azure knows about LB backends, and there are associated inbound NAT rules, we retrieve the IP addresses of the LBs.
-        // The id of the loadbalancer is assumed to be "resourceGroupName" + "lb".
-        if (!backends.isEmpty() || !inboundNatRules.isEmpty()) {
-            publicIp = azureClient.getLoadBalancerIps(resourceGroupName, AzureUtils.getLoadBalancerId(resourceGroupName)).get(0);
-        }
-
-        // throw away the name we constructed above if `publicIpAddress` is available.
         if (publicIpAddress != null && publicIpAddress.ipAddress() != null) {
-            publicIp = publicIpAddress.ipAddress();
+            return publicIpAddress.ipAddress();
         }
 
-        return publicIp;
+        Optional<PublicIPAddress> ipAdddressFromBackendPools = primaryIpConfiguration.listAssociatedLoadBalancerBackends().stream()
+                .map(LoadBalancerBackend::parent)
+                .flatMap(lb -> lb.publicIPAddressIds().stream())
+                .map(azureClient::getPublicIpAddressById)
+                .findFirst();
+
+        Optional<PublicIPAddress> ipAddressFromInboundNatRules = primaryIpConfiguration.listAssociatedLoadBalancerInboundNatRules().stream()
+                .map(LoadBalancerInboundNatRule::parent)
+                .flatMap(lb -> lb.publicIPAddressIds().stream())
+                .map(azureClient::getPublicIpAddressById)
+                .findFirst();
+
+        if (ipAdddressFromBackendPools.isPresent()) {
+            return ipAdddressFromBackendPools.get().ipAddress();
+        } else if (ipAddressFromInboundNatRules.isPresent()) {
+            return ipAddressFromInboundNatRules.get().ipAddress();
+        } else {
+            return null;
+        }
     }
 }
