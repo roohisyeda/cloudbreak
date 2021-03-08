@@ -1,22 +1,24 @@
 package com.sequenceiq.cloudbreak.converter.v4.stacks.instancegroup;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-
-import org.springframework.stereotype.Component;
-
-import com.sequenceiq.cloudbreak.common.mappable.ProviderParameterCalculator;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.instancegroup.InstanceGroupV4Request;
+import com.sequenceiq.cloudbreak.cloud.model.instance.AzureInstanceGroupParameters;
+import com.sequenceiq.cloudbreak.common.exception.BadRequestException;
 import com.sequenceiq.cloudbreak.common.json.Json;
+import com.sequenceiq.cloudbreak.common.mappable.CloudPlatform;
+import com.sequenceiq.cloudbreak.common.mappable.ProviderParameterCalculator;
 import com.sequenceiq.cloudbreak.converter.AbstractConversionServiceAwareConverter;
 import com.sequenceiq.cloudbreak.domain.SecurityGroup;
 import com.sequenceiq.cloudbreak.domain.Template;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
-import com.sequenceiq.cloudbreak.common.exception.BadRequestException;
+import org.springframework.stereotype.Component;
+
+import javax.inject.Inject;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static java.util.Map.entry;
 
 @Component
 public class InstanceGroupV4RequestToInstanceGroupConverter extends AbstractConversionServiceAwareConverter<InstanceGroupV4Request, InstanceGroup> {
@@ -52,6 +54,13 @@ public class InstanceGroupV4RequestToInstanceGroupConverter extends AbstractConv
 
     private void setAttributes(InstanceGroupV4Request source, InstanceGroup instanceGroup) {
         Map<String, Object> parameters = providerParameterCalculator.get(source).asMap();
+        if (source.getCloudPlatform() == CloudPlatform.AZURE) {
+            parameters.put("availabilitySet", Map.ofEntries(
+                    entry(AzureInstanceGroupParameters.NAME, String.format("%s-%s-as", source.getName(), instanceGroup.getGroupName())),
+                    entry(AzureInstanceGroupParameters.FAULT_DOMAIN_COUNT, 2),
+                    entry(AzureInstanceGroupParameters.UPDATE_DOMAIN_COUNT, 20)));
+        }
+
         if (parameters != null) {
             try {
                 instanceGroup.setAttributes(new Json(parameters));
