@@ -4,6 +4,7 @@ import static java.util.Collections.singletonList;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -100,6 +101,13 @@ public class AwsResourceConnector implements ResourceConnector<Object> {
     public List<CloudResourceStatus> launch(AuthenticatedContext ac, CloudStack stack, PersistenceNotifier resourceNotifier,
             AdjustmentType adjustmentType, Long threshold) throws Exception {
         return awsLaunchService.launch(ac, stack, resourceNotifier, adjustmentType, threshold);
+    }
+
+    @Override
+    public List<CloudResourceStatus> launchLoadBalancer(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier)
+            throws Exception {
+        // No-op.
+        return Collections.emptyList();
     }
 
     @Override

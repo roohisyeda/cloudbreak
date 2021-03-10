@@ -138,6 +138,13 @@ public class AzureResourceConnector extends AbstractResourceConnector {
         return resources;
     }
 
+    @Override
+    public List<CloudResourceStatus> launchLoadBalancer(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier)
+            throws Exception {
+        // No-op.
+        return Collections.emptyList();
+    }
+
     private List<CloudResource> persistCloudResources(
             AuthenticatedContext ac, CloudStack stack, PersistenceNotifier notifier, CloudContext cloudContext, String stackName,
             String resourceGroupName, Deployment templateDeployment) {

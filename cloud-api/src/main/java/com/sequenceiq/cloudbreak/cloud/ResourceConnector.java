@@ -61,6 +61,23 @@ public interface ResourceConnector<R> {
             AdjustmentType adjustmentType, Long threshold) throws Exception;
 
     /**
+     * Launches a load balancer instance on the Cloud platform.
+     * <br>
+     * This method initiates the creation of a load balancer on a particular Cloud platform and returns of a list of {@link CloudResourceStatus} values.
+     * It does not need to wait/block until the infrastructure creation is finished, but it can return immediately and the
+     * {@link #check(AuthenticatedContext, List)} method is invoked to check regularly whether the infrastructure and all resources
+     * have already been created or not.
+     *
+     * @param authenticatedContext the authenticated context which holds the client object
+     * @param stack                contains the full description of infrastructure
+     * @param persistenceNotifier  Cloud platform notifies the Cloudbreak over this interface if a resource is allocated on the Cloud platfrom
+     * @return the status of loadbalancer resources allocated on Cloud platform
+     * @throws Exception in case of any error
+     */
+    List<CloudResourceStatus> launchLoadBalancer(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier)
+            throws Exception;
+
+    /**
      * Launches a database stack on a cloud platform. The stack consists of the following resources:
      * - a single database server instance
      * - depending on the platform, other associated, required resources (e.g., a DB subnet group for RDS)

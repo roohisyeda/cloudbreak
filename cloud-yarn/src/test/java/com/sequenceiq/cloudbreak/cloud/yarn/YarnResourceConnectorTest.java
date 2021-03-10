@@ -117,7 +117,7 @@ public class YarnResourceConnectorTest {
         ArgumentCaptor<ApplicationDetailRequest> requestCaptor = ArgumentCaptor.forClass(ApplicationDetailRequest.class);
 
         setUpHappyPath(createRequestCaptor, requestCaptor);
-        when(applicationNameUtilMock.decorateName("name-1", "horton")).thenReturn("name-1-horton");
+        when(applicationNameUtilMock.createApplicationName(authenticatedContextMock)).thenReturn("name-1-horton");
 
         underTest.launch(authenticatedContextMock,
                 stackMock, persistenceNotifierMock, AdjustmentType.EXACT, Long.MAX_VALUE);
@@ -144,7 +144,7 @@ public class YarnResourceConnectorTest {
         when(cloudInstanceMock.getTemplate()).thenReturn(instanceTemplateMock);
         when(instanceTemplateMock.getParameter(PlatformParametersConsts.CUSTOM_INSTANCETYPE_CPUS, Integer.class)).thenReturn(2);
         when(instanceTemplateMock.getParameter(PlatformParametersConsts.CUSTOM_INSTANCETYPE_MEMORY, Integer.class)).thenReturn(4096);
-        when(applicationNameUtilMock.decorateName("name-1", "horton")).thenReturn("n-1");
+        when(applicationNameUtilMock.createApplicationName(authenticatedContextMock)).thenReturn("n-1");
 
         List<CloudResourceStatus> cloudResourceStatusList = underTest.launch(authenticatedContextMock,
                 stackMock, persistenceNotifierMock, AdjustmentType.EXACT, Long.MAX_VALUE);
@@ -292,7 +292,7 @@ public class YarnResourceConnectorTest {
         ArgumentCaptor<ApplicationDetailRequest> requestCaptor = ArgumentCaptor.forClass(ApplicationDetailRequest.class);
         when(yarnClientMock.getApplicationDetail(requestCaptor.capture()))
                 .thenReturn(createResponseContext(YarnResourceConstants.HTTP_SUCCESS));
-        when(applicationNameUtilMock.decorateName("name-1", "horton")).thenReturn("n-1-hort");
+        when(applicationNameUtilMock.createApplicationName(authenticatedContextMock)).thenReturn("n-1-hort");
 
         List<CloudResourceStatus> cloudResourceStatusList = underTest.launch(authenticatedContextMock,
                 stackMock, persistenceNotifierMock, AdjustmentType.EXACT, Long.MAX_VALUE);

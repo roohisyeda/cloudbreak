@@ -5,6 +5,7 @@ import static java.util.Collections.emptyList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -74,6 +75,13 @@ public class MockResourceConnector implements ResourceConnector<Object> {
         CloudVmInstanceStatus[] cloudVmInstanceStatusArray = mockUrlFactory.get(authenticatedContext, "/spi/add_instance")
                 .post(Entity.entity(groups, MediaType.APPLICATION_JSON_TYPE), CloudVmInstanceStatus[].class);
         return Arrays.asList(cloudVmInstanceStatusArray);
+    }
+
+    @Override
+    public List<CloudResourceStatus> launchLoadBalancer(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier)
+            throws Exception {
+        // No-op.
+        return Collections.emptyList();
     }
 
     @Override

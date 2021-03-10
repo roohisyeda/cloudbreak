@@ -1,6 +1,7 @@
 package com.sequenceiq.cloudbreak.cloud.yarn;
 
 import static com.sequenceiq.common.api.type.ResourceType.YARN_APPLICATION;
+import static com.sequenceiq.common.api.type.ResourceType.YARN_LOAD_BALANCER;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -22,7 +23,6 @@ import com.google.common.collect.Maps;
 import com.sequenceiq.cloudbreak.cloud.PlatformParametersConsts;
 import com.sequenceiq.cloudbreak.cloud.ResourceConnector;
 import com.sequenceiq.cloudbreak.cloud.context.AuthenticatedContext;
-import com.sequenceiq.cloudbreak.cloud.context.CloudContext;
 import com.sequenceiq.cloudbreak.cloud.exception.CloudConnectorException;
 import com.sequenceiq.cloudbreak.cloud.exception.CloudOperationNotSupportedException;
 import com.sequenceiq.cloudbreak.cloud.exception.TemplatingNotSupportedException;
@@ -54,20 +54,25 @@ import com.sequenceiq.cloudbreak.cloud.yarn.client.model.request.DeleteApplicati
 import com.sequenceiq.cloudbreak.cloud.yarn.client.model.response.ApplicationDetailResponse;
 import com.sequenceiq.cloudbreak.cloud.yarn.client.model.response.ApplicationErrorResponse;
 import com.sequenceiq.cloudbreak.cloud.yarn.client.model.response.ResponseContext;
+import com.sequenceiq.cloudbreak.cloud.yarn.loadbalancer.service.launch.LoadBalancerLaunchService;
 import com.sequenceiq.cloudbreak.cloud.yarn.status.YarnApplicationStatus;
 import com.sequenceiq.common.api.type.AdjustmentType;
+import com.sequenceiq.common.api.type.ResourceType;
 
 @Service
 public class YarnResourceConnector implements ResourceConnector<Object> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(YarnResourceConnector.class);
+    public static final String ARTIFACT_TYPE_DOCKER = "DOCKER";
 
-    private static final String ARTIFACT_TYPE_DOCKER = "DOCKER";
+    private static final Logger LOGGER = LoggerFactory.getLogger(YarnResourceConnector.class);
 
     @Inject
     private YarnClientUtil yarnClientUtil;
 
     @Inject
     private ApplicationNameUtil applicationNameUtil;
+
+    @Inject
+    private LoadBalancerLaunchService loadBalancerLaunchService;
 
     @Value("${cb.yarn.defaultQueue}")
     private String defaultQueue;
@@ -82,7 +87,7 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
     public List<CloudResourceStatus> launch(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier,
             AdjustmentType adjustmentType, Long threshold) throws Exception {
         YarnClient yarnClient = yarnClientUtil.createYarnClient(authenticatedContext);
-        String applicationName = createApplicationName(authenticatedContext);
+        String applicationName = applicationNameUtil.createApplicationName(authenticatedContext);
 
         if (!checkApplicationAlreadyCreated(yarnClient, applicationName)) {
             CreateApplicationRequest createApplicationRequest = createRequest(stack, applicationName);
@@ -95,12 +100,20 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
     }
 
     @Override
+    public List<CloudResourceStatus> launchLoadBalancer(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier)
+            throws Exception {
+        YarnClient yarnClient = yarnClientUtil.createYarnClient(authenticatedContext);
+        CloudResource loadBalancerApplication = loadBalancerLaunchService.launch(authenticatedContext, stack, persistenceNotifier, yarnClient);
+        return check(authenticatedContext, Collections.singletonList(loadBalancerApplication));
+    }
+
+    @Override
     public List<CloudResourceStatus> launchDatabaseServer(AuthenticatedContext authenticatedContext, DatabaseStack stack,
             PersistenceNotifier persistenceNotifier) {
         throw new UnsupportedOperationException("Database server launch is not supported for " + getClass().getName());
     }
 
-    private void createApplication(YarnClient yarnClient, CreateApplicationRequest createApplicationRequest) throws MalformedURLException {
+    public static void createApplication(YarnClient yarnClient, CreateApplicationRequest createApplicationRequest) throws MalformedURLException {
         ResponseContext responseContext = yarnClient.createApplication(createApplicationRequest);
         if (Objects.nonNull(responseContext.getResponseError())) {
             ApplicationErrorResponse applicationErrorResponse = responseContext.getResponseError();
@@ -110,11 +123,7 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
     }
 
     private CreateApplicationRequest createRequest(CloudStack stack, String applicationName) {
-        CreateApplicationRequest createApplicationRequest = new CreateApplicationRequest();
-        createApplicationRequest.setName(applicationName);
-        createApplicationRequest.setQueue(stack.getParameters().getOrDefault(YarnConstants.YARN_QUEUE_PARAMETER, defaultQueue));
-        String lifeTimeStr = stack.getParameters().get(YarnConstants.YARN_LIFETIME_PARAMETER);
-        createApplicationRequest.setLifetime(lifeTimeStr != null ? Integer.parseInt(lifeTimeStr) : defaultLifeTime);
+        CreateApplicationRequest createApplicationRequest = initializeRequest(stack, applicationName, defaultQueue, defaultLifeTime);
 
         Artifact artifact = new Artifact();
         artifact.setId(stack.getImage().getImageName());
@@ -125,6 +134,15 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
                 .collect(Collectors.toList());
 
         createApplicationRequest.setComponents(components);
+        return createApplicationRequest;
+    }
+
+    public static CreateApplicationRequest initializeRequest(CloudStack stack, String applicationName, String defaultQueue, int defaultLifeTime) {
+        CreateApplicationRequest createApplicationRequest = new CreateApplicationRequest();
+        createApplicationRequest.setName(applicationName);
+        createApplicationRequest.setQueue(stack.getParameters().getOrDefault(YarnConstants.YARN_QUEUE_PARAMETER, defaultQueue));
+        String lifeTimeStr = stack.getParameters().get(YarnConstants.YARN_LIFETIME_PARAMETER);
+        createApplicationRequest.setLifetime(lifeTimeStr != null ? Integer.parseInt(lifeTimeStr) : defaultLifeTime);
         return createApplicationRequest;
     }
 
@@ -162,7 +180,7 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
         return component;
     }
 
-    private boolean checkApplicationAlreadyCreated(YarnClient yarnClient, String applicationName) throws MalformedURLException {
+    public static boolean checkApplicationAlreadyCreated(YarnClient yarnClient, String applicationName) throws MalformedURLException {
         ApplicationDetailRequest applicationDetailRequest = new ApplicationDetailRequest();
         applicationDetailRequest.setName(applicationName);
         return yarnClient.getApplicationDetail(applicationDetailRequest).getStatusCode() == YarnResourceConstants.HTTP_SUCCESS;
@@ -173,7 +191,8 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
         YarnClient yarnClient = yarnClientUtil.createYarnClient(authenticatedContext);
         List<CloudResourceStatus> result = new ArrayList<>();
         for (CloudResource resource : resources) {
-            if (resource.getType() == YARN_APPLICATION) {
+            ResourceType resourceType = resource.getType();
+            if (resourceType == YARN_APPLICATION || resourceType == YARN_LOAD_BALANCER) {
                 LOGGER.debug("Checking Yarn application status of: {}", resource.getName());
                 try {
                     ApplicationDetailRequest applicationDetailRequest = new ApplicationDetailRequest();
@@ -204,7 +223,8 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
     @Override
     public List<CloudResourceStatus> terminate(AuthenticatedContext authenticatedContext, CloudStack stack, List<CloudResource> cloudResources) {
         for (CloudResource resource : cloudResources) {
-            if (resource.getType() == YARN_APPLICATION) {
+            ResourceType resourceType = resource.getType();
+            if (resourceType == YARN_APPLICATION || resourceType == YARN_LOAD_BALANCER) {
                 YarnClient yarnClient = yarnClientUtil.createYarnClient(authenticatedContext);
                 String yarnApplicationName = resource.getName();
                 String stackName = authenticatedContext.getCloudContext().getName();
@@ -213,7 +233,7 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
                     DeleteApplicationRequest deleteApplicationRequest = new DeleteApplicationRequest();
                     deleteApplicationRequest.setName(yarnApplicationName);
                     yarnClient.deleteApplication(deleteApplicationRequest);
-                    LOGGER.debug("Yarn Applicatin has been deleted");
+                    LOGGER.debug("Yarn Application has been deleted");
                 } catch (MalformedURLException | YarnClientException e) {
                     throw new CloudConnectorException("Stack cannot be deleted", e);
                 }
@@ -284,15 +304,7 @@ public class YarnResourceConnector implements ResourceConnector<Object> {
     @Override
     public List<CloudResourceStatus> updateLoadBalancers(AuthenticatedContext authenticatedContext, CloudStack stack,
             PersistenceNotifier persistenceNotifier) {
-        throw new UnsupportedOperationException("YARN load balancers are not currently supported.");
-    }
-
-    private String createApplicationName(AuthenticatedContext ac) {
-        CloudContext context = ac.getCloudContext();
-        String name = context.getName();
-        String id = context.getId().toString();
-        String user = context.getUserName().split("@")[0].replaceAll("[^a-z0-9-_]", "");
-        name += "-" + id;
-        return applicationNameUtil.decorateName(name, user);
+        // No-op.
+        return Collections.emptyList();
     }
 }

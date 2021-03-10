@@ -1,7 +1,9 @@
 package com.sequenceiq.cloudbreak.cloud.yarn;
 
+import static com.sequenceiq.cloudbreak.cloud.yarn.loadbalancer.service.launch.LoadBalancerLaunchService.getContainers;
+
 import java.net.MalformedURLException;
-import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -39,6 +41,9 @@ import com.sequenceiq.common.api.type.ResourceType;
 public class YarnMetadataCollector implements MetadataCollector {
     @Inject
     private YarnClientUtil yarnClientUtil;
+
+    @Inject
+    private ApplicationNameUtil applicationNameUtil;
 
     @Override
     public List<CloudVmMetaDataStatus> collect(AuthenticatedContext authenticatedContext, List<CloudResource> resources, List<CloudInstance> vms,
@@ -138,7 +143,21 @@ public class YarnMetadataCollector implements MetadataCollector {
 
     @Override
     public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<LoadBalancerType> loadBalancerTypes) {
-        // no-op
-        return Collections.emptyList();
+        YarnClient yarnClient = yarnClientUtil.createYarnClient(ac);
+        String loadBalancerApplicationName = applicationNameUtil.createLoadBalancerName(ac);
+        Iterable<Container> loadBalancerContainers = getContainers(loadBalancerApplicationName, yarnClient);
+        Iterator<Container> containerIterator = loadBalancerContainers.iterator();
+
+        List<CloudLoadBalancerMetadata> loadBalancerMetadata = Lists.newArrayList();
+        for (LoadBalancerType loadBalancerType : loadBalancerTypes) {
+            Container container = containerIterator.next();
+            CloudLoadBalancerMetadata metadata = new CloudLoadBalancerMetadata.Builder()
+                    .withType(loadBalancerType)
+                    .withName(loadBalancerApplicationName + loadBalancerType.name())
+                    .withIp(container.getIp()).build();
+            loadBalancerMetadata.add(metadata);
+        }
+
+        return loadBalancerMetadata;
     }
 }

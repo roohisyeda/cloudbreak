@@ -121,6 +121,13 @@ public class OpenStackResourceConnector implements ResourceConnector<Object> {
     }
 
     @Override
+    public List<CloudResourceStatus> launchLoadBalancer(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier)
+            throws Exception {
+        // No-op.
+        return Collections.emptyList();
+    }
+
+    @Override
     public List<CloudResourceStatus> launchDatabaseServer(AuthenticatedContext authenticatedContext, DatabaseStack stack,
         PersistenceNotifier persistenceNotifier) {
         throw new UnsupportedOperationException("Database server launch is not supported for " + getClass().getName());

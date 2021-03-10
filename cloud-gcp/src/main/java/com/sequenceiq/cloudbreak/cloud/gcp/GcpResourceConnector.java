@@ -141,6 +141,13 @@ public class GcpResourceConnector extends AbstractResourceConnector {
     }
 
     @Override
+    public List<CloudResourceStatus> launchLoadBalancer(AuthenticatedContext authenticatedContext, CloudStack stack, PersistenceNotifier persistenceNotifier)
+            throws Exception {
+        // No-op.
+        return Collections.emptyList();
+    }
+
+    @Override
     public List<CloudResourceStatus> updateLoadBalancers(AuthenticatedContext authenticatedContext, CloudStack stack,
             PersistenceNotifier persistenceNotifier) {
 
