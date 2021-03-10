@@ -254,6 +254,13 @@
                        <#if !noFirewallRules || !noPublicIp>,</#if>
                        "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkNamePrefix'))]"
                        </#if>
+                       <#if instanceGroup == "GATEWAY" && loadBalancers?? && (loadBalancers?size > 0)>,
+                           <#list loadBalancers as loadBalancer>
+                               <#-- todo: this is wrong. But, we have to define a dependency between the NIC and the address pool-->
+                               <#-- this makes every instance in the gateway group depend on every load balancer address pool -->
+                               "[resourceId('Microsoft.Network/loadBalancers', '${loadBalancer.name}')]"
+                           </#list>
+                       </#if>
                    ],
                    "properties": {
                        <#if acceleratedNetworkEnabled[instance.flavor]> "enableAcceleratedNetworking": "true", </#if>
@@ -397,7 +404,11 @@
                 ,{
                   "apiVersion": "2020-05-01",
                   "type": "Microsoft.Network/loadBalancers",
-                  "dependsOn": [],
+                  "dependsOn": [
+                    <#if loadBalancer.type == "PUBLIC">
+                    "[resourceId('Microsoft.Network/publicIPAddresses', '${loadBalancer.name}-publicIp')]"
+                    </#if>
+                  ],
                   "location": "[parameters('region')]",
                   "name": "${loadBalancer.name}",
                   "properties": {
@@ -409,24 +420,18 @@
                       }
                     ],
                     "frontendIPConfigurations": [
+                      <#if loadBalancer.type == "PUBLIC">
                       {
-                        "name": "LoadBalancerFrontEnd",
+                        "name": "${loadBalancer.name}-frontend",
                         "properties": {
-                          "privateIPAddressVersion": "IPv4",
-                          "privateIPAllocationMethod": "Dynamic",
-                          <#if existingVPC>
-                          "subnet": {
-                            "id": "[concat(variables('vnetID'),'/subnets/', '${existingSubnetName}')]"
+                          "publicIPAddress": {
+                            "id": "[resourceId('Microsoft.Network/publicIPAddresses', '${loadBalancer.name}-publicIp')]"
                           }
-                          <#else>
-                          "subnet": {
-                            "id": "[concat(variables('vnetID'),'/subnets/',parameters('subnet1Name'))]"
-                          }
-                          </#if>
                         }
-                        },
-                {
-                        "name": "static-internal-ip-address",
+                      }
+                      <#else>
+                      {
+                        "name": "${loadBalancer.name}-frontend",
                         "properties": {
                           "privateIPAddressVersion": "IPv4",
                           "privateIPAllocationMethod": "Dynamic",
@@ -441,6 +446,7 @@
                           </#if>
                         }
                       }
+                      </#if>
                 ],
                 "inboundNatPools": [],
                 "inboundNatRules": [],
@@ -457,7 +463,7 @@
                                     "enableFloatingIP": false,
                                     "enableTcpReset": false,
                                     "frontendIPConfiguration": {
-                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', '${loadBalancer.name}'), '/frontendIPConfigurations/static-internal-ip-address')]"
+                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', '${loadBalancer.name}'), '/frontendIPConfigurations/${loadBalancer.name}-frontend')]"
                                     },
                                     "frontendPort": ${rule.frontendPort},
                                     "idleTimeoutInMinutes": 4,
@@ -485,9 +491,25 @@
                     ]
                   },
                   "sku": {
-                    "name": "Basic"
+                    "name": "Standard"
+                    <#-- todo: see if we can remove the Availability set code now that we're using the Standard SKU for the LB. -->
                   }
                 }
+                <#if loadBalancer.type == "PUBLIC">
+                ,{
+                    "type": "Microsoft.Network/publicIPAddresses",
+                    "apiVersion": "2020-06-01",
+                    "name": "${loadBalancer.name}-publicIp",
+                    "location": "[parameters('region')]",
+                    "sku": {
+                        "name": "Standard"
+                    },
+                    "properties": {
+                        "publicIPAddressVersion": "IPv4",
+                        "publicIPAllocationMethod": "Static"
+                    }
+                }
+                </#if>
             </#list>
      	]
 }

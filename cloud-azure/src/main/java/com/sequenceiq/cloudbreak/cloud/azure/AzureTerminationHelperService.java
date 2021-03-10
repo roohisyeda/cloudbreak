@@ -109,6 +109,9 @@ public class AzureTerminationHelperService {
         deleteVolumeSets(ac, stack, resourcesToRemove, networkResources, resourceGroupName);
 
         if (deleteWholeDeployment) {
+            // deleting load balancers
+            List<String> loadBalancerNames = getResourceNamesByResourceType(resourcesToRemove, ResourceType.AZURE_LOAD_BALANCER);
+
             // deleting availability sets
             List<String> availabiltySetNames = getResourceNamesByResourceType(resourcesToRemove, ResourceType.AZURE_AVAILABILITY_SET);
             azureUtils.deleteAvailabilitySets(client, resourceGroupName, availabiltySetNames);

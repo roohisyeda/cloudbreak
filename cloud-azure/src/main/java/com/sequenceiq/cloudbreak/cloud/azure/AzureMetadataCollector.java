@@ -1,26 +1,10 @@
 package com.sequenceiq.cloudbreak.cloud.azure;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.stereotype.Service;
-
 import com.microsoft.azure.management.compute.VirtualMachine;
 import com.microsoft.azure.management.network.NetworkInterface;
 import com.sequenceiq.cloudbreak.cloud.MetadataCollector;
 import com.sequenceiq.cloudbreak.cloud.azure.client.AzureClient;
+import com.sequenceiq.cloudbreak.cloud.azure.loadbalancer.AzureLoadBalancer;
 import com.sequenceiq.cloudbreak.cloud.context.AuthenticatedContext;
 import com.sequenceiq.cloudbreak.cloud.context.CloudContext;
 import com.sequenceiq.cloudbreak.cloud.exception.CloudConnectorException;
@@ -33,6 +17,21 @@ import com.sequenceiq.cloudbreak.cloud.model.CloudVmMetaDataStatus;
 import com.sequenceiq.cloudbreak.cloud.model.InstanceStatus;
 import com.sequenceiq.cloudbreak.cloud.model.InstanceTemplate;
 import com.sequenceiq.common.api.type.LoadBalancerType;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.stereotype.Service;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AzureMetadataCollector implements MetadataCollector {
@@ -131,9 +130,52 @@ public class AzureMetadataCollector implements MetadataCollector {
     }
 
     @Override
-    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<LoadBalancerType> loadBalancerTypes) {
-        // no-op
-        return Collections.emptyList();
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<LoadBalancerType> loadBalancerTypes,
+            List<CloudResource> resources) {
+        LOGGER.debug("Collecting Azure load balancer metadata, for cluster {}", ac.getCloudContext().getName());
+
+        List<CloudLoadBalancerMetadata> cloudLoadBalancerMetadata = new ArrayList<>();
+        String resourceGroup = azureUtils.getTemplateResource(resources).getName();
+        AzureClient azureClient = ac.getParameter(AzureClient.class);
+
+        for (LoadBalancerType type : loadBalancerTypes) {
+            String loadBalancerName = AzureLoadBalancer.getLoadBalancerName(type);
+            LOGGER.debug("Attempting to collect metadata for load balancer {}, type {}", loadBalancerName, type);
+            try {
+                String ip = null;
+                if (LoadBalancerType.PUBLIC.equals(type)) {
+                    List<String> publicIps = azureClient.getLoadBalancerIps(resourceGroup, loadBalancerName);
+                    if (publicIps.isEmpty()) {
+                        LOGGER.warn("Unable to find public ip address for load balancer {}", loadBalancerName);
+                    } else {
+                        ip = publicIps.get(0);
+                    }
+                } else if (LoadBalancerType.PRIVATE.equals(type)) {
+                    List<String> privateIps = azureClient.getLoadBalancerPrivateIps(resourceGroup, loadBalancerName);
+                    if (privateIps.isEmpty()) {
+                        LOGGER.warn("Unable to find private ip address for load balancer {}", loadBalancerName);
+                    } else {
+                        ip = privateIps.get(0);
+                    }
+                }
+
+                if (StringUtils.isNotEmpty(ip)) {
+                    CloudLoadBalancerMetadata loadBalancerMetadata = new CloudLoadBalancerMetadata.Builder()
+                        .withType(type)
+                        .withIp(ip)
+                        .withName(loadBalancerName)
+                        .build();
+                    cloudLoadBalancerMetadata.add(loadBalancerMetadata);
+                    LOGGER.debug("Saved metadata for load balancer {}: ip {}", loadBalancerName, ip);
+                } else {
+                    LOGGER.warn("Unable to find metadata for load balancer {}.", loadBalancerName);
+                }
+            } catch (RuntimeException e) {
+                LOGGER.debug("Unable to find metadata for load balancer " + loadBalancerName, e);
+            }
+        }
+
+        return cloudLoadBalancerMetadata;
     }
 
 }

@@ -1,7 +1,7 @@
 package com.sequenceiq.cloudbreak.cloud.azure.loadbalancer;
 
-import com.sequenceiq.cloudbreak.cloud.azure.AzureUtils;
 import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancer;
+import com.sequenceiq.common.api.type.LoadBalancerType;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,9 +13,15 @@ import static java.util.stream.Collectors.toSet;
 public final class AzureLoadBalancer {
     // todo: handling of rules and probes is naive here, need to create an association from a rule to the probes that it relies on.
     // I think we should _create_ a probe, then associate it with a rule and add it to the Load Balancer's list of probes.
+    private static final String LOAD_BALANCER_NAME_PREFIX = "LoadBalancer";
+
     private final List<AzureLoadBalancingRule> rules;
+
     private final Set<AzureLoadBalancerProbe> probes;
+
     private final String name;
+
+    private final LoadBalancerType type;
 
     public AzureLoadBalancer(CloudLoadBalancer cloudLoadBalancer) {
         rules = cloudLoadBalancer.getPortToTargetGroupMapping()
@@ -29,7 +35,12 @@ public final class AzureLoadBalancer {
                 .map(AzureLoadBalancingRule::getProbe)
                 .collect(toSet());
 
-        this.name = cloudLoadBalancer.getType().toString() + "-lb";
+        this.name = getLoadBalancerName(cloudLoadBalancer.getType());
+        this.type = cloudLoadBalancer.getType();
+    }
+
+    public static String getLoadBalancerName (LoadBalancerType type) {
+        return LOAD_BALANCER_NAME_PREFIX + type.toString();
     }
 
     public Collection<AzureLoadBalancingRule> getRules() {
@@ -42,5 +53,9 @@ public final class AzureLoadBalancer {
 
     public String getName() {
         return name;
+    }
+
+    public LoadBalancerType getType () {
+        return type;
     }
 }

@@ -1,28 +1,5 @@
 package com.sequenceiq.cloudbreak.cloud.azure.client;
 
-import static com.microsoft.azure.management.privatedns.v2018_09_01.ProvisioningState.SUCCEEDED;
-import static com.sequenceiq.cloudbreak.util.Benchmark.measure;
-import static java.util.Collections.emptyMap;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Strings;
 import com.microsoft.azure.CloudException;
 import com.microsoft.azure.PagedList;
@@ -43,6 +20,7 @@ import com.microsoft.azure.management.graphrbac.RoleAssignments;
 import com.microsoft.azure.management.graphrbac.implementation.RoleAssignmentInner;
 import com.microsoft.azure.management.msi.Identity;
 import com.microsoft.azure.management.network.LoadBalancer;
+import com.microsoft.azure.management.network.LoadBalancerFrontend;
 import com.microsoft.azure.management.network.Network;
 import com.microsoft.azure.management.network.NetworkInterface;
 import com.microsoft.azure.management.network.NetworkInterfaces;
@@ -50,6 +28,7 @@ import com.microsoft.azure.management.network.NetworkSecurityGroup;
 import com.microsoft.azure.management.network.NetworkSecurityGroups;
 import com.microsoft.azure.management.network.PublicIPAddress;
 import com.microsoft.azure.management.network.Subnet;
+import com.microsoft.azure.management.network.model.HasPrivateIPAddress;
 import com.microsoft.azure.management.privatedns.v2018_09_01.PrivateZone;
 import com.microsoft.azure.management.privatedns.v2018_09_01.VirtualNetworkLinkState;
 import com.microsoft.azure.management.privatedns.v2018_09_01.implementation.VirtualNetworkLinkInner;
@@ -89,9 +68,30 @@ import com.sequenceiq.cloudbreak.cloud.model.ResourceStatus;
 import com.sequenceiq.cloudbreak.validation.ValidationResult;
 import com.sequenceiq.cloudbreak.validation.ValidationResult.ValidationResultBuilder;
 import com.sequenceiq.common.api.type.CommonStatus;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Completable;
 import rx.Observable;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static com.microsoft.azure.management.privatedns.v2018_09_01.ProvisioningState.SUCCEEDED;
+import static com.sequenceiq.cloudbreak.util.Benchmark.measure;
+import static java.util.Collections.emptyMap;
 
 public class AzureClient {
 
@@ -679,6 +679,18 @@ public class AzureClient {
         for (String publicIpAddressId : publicIpAddressIds) {
             PublicIPAddress publicIpAddress = getPublicIpAddressById(publicIpAddressId);
             ipList.add(publicIpAddress.ipAddress());
+        }
+        return ipList;
+    }
+
+    public List<String> getLoadBalancerPrivateIps(String resourceGroupName, String loadBalancerName) {
+        List<String> ipList = new ArrayList<>();
+        Map<String, LoadBalancerFrontend> frontends = getLoadBalancer(resourceGroupName, loadBalancerName).frontends();
+        for (LoadBalancerFrontend frontend : frontends.values()) {
+            if (!frontend.isPublic() && frontend instanceof HasPrivateIPAddress) {
+                String privateIp = ((HasPrivateIPAddress) frontend).privateIPAddress();
+                ipList.add(privateIp);
+            }
         }
         return ipList;
     }
