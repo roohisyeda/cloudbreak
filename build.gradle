@@ -232,7 +232,7 @@ subprojects {
         buildVersion = project.version
       }
     }
-    if (project.name in ['freeipa-client']) {
+    if (project.name in ['freeipa-client', 'common', 'cluster-proxy']) {
       buildInfo.configure {
         destination = file("$project.buildDir")
         basename = project.jar.baseName

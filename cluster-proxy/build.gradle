@@ -24,6 +24,17 @@ dependencyManagement {
   }
 }
 
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      configuration = configurations.deployerJars
+      repository(url: "$System.env.NEXUS_URL") {
+        authentication(userName: "$System.env.NEXUS_USER", password: "$System.env.NEXUS_PASSWORD")
+      }
+    }
+  }
+}
+
 dependencies {
   compile project(':secret-engine')
   compile group: 'org.springframework.boot',              name: 'spring-boot-starter-web'
