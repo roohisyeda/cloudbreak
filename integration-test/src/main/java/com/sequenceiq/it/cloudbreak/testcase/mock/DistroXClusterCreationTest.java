@@ -23,6 +23,7 @@ import com.sequenceiq.it.cloudbreak.assertion.audit.DatahubAuditGrpcServiceAsser
 import com.sequenceiq.it.cloudbreak.client.BlueprintTestClient;
 import com.sequenceiq.it.cloudbreak.client.DistroXTestClient;
 import com.sequenceiq.it.cloudbreak.client.EnvironmentTestClient;
+import com.sequenceiq.it.cloudbreak.client.FreeIpaTestClient;
 import com.sequenceiq.it.cloudbreak.client.SdxTestClient;
 import com.sequenceiq.it.cloudbreak.context.Description;
 import com.sequenceiq.it.cloudbreak.context.MockedTestContext;
@@ -35,6 +36,7 @@ import com.sequenceiq.it.cloudbreak.dto.distrox.image.DistroXImageTestDto;
 import com.sequenceiq.it.cloudbreak.dto.distrox.instancegroup.DistroXNetworkTestDto;
 import com.sequenceiq.it.cloudbreak.dto.environment.EnvironmentNetworkTestDto;
 import com.sequenceiq.it.cloudbreak.dto.environment.EnvironmentTestDto;
+import com.sequenceiq.it.cloudbreak.dto.freeipa.FreeIpaTestDto;
 import com.sequenceiq.it.cloudbreak.dto.sdx.SdxInternalTestDto;
 import com.sequenceiq.it.cloudbreak.exception.TestFailException;
 import com.sequenceiq.it.cloudbreak.testcase.mock.clouderamanager.AbstractClouderaManagerTest;
@@ -80,6 +82,9 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
     @Inject
     private DatahubAuditGrpcServiceAssertion auditGrpcServiceAssertion;
 
+    @Inject
+    private FreeIpaTestClient freeIpaTestClient;
+
     @Override
     protected void setupTest(TestContext testContext) {
         createDefaultUser(testContext);
@@ -97,6 +102,7 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
             when = "a DistroX with Cloudera Manager is created",
             then = "the cluster should be available")
     public void testCreateNewRegularDistroXCluster(MockedTestContext testContext) {
+        createDefaultFreeIpa(testContext);
         testContext
                 .given(DIX_NET_KEY, DistroXNetworkTestDto.class)
                 .given(DIX_IMG_KEY, DistroXImageTestDto.class)
@@ -131,6 +137,7 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
             when = "a DistroX creation request sent",
             then = "its creation should not be started due to the unavailability of the environment")
     public void testWhenEnvIsStoppedUnableToCreateDistroX(MockedTestContext testContext) {
+        createDefaultFreeIpa(testContext);
         givenAnEnvironmentInStoppedState(testContext)
                 .given(DIX_NET_KEY, DistroXNetworkTestDto.class)
                 .given(DIX_IMG_KEY, DistroXImageTestDto.class)
@@ -145,7 +152,7 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
                 .withCluster(CLUSTER_KEY)
                 .withImageSettings(DIX_IMG_KEY)
                 .withNetwork(DIX_NET_KEY)
-                .whenException(distroXClient.create(), BadRequestException.class, expectedMessage("Environment state is ENV_STOPPED instead of AVAILABLE"))
+                .whenException(distroXClient.create(), BadRequestException.class, expectedMessage("Freeipa state is STOPPED instead of AVAILABLE"))
                 .validate();
     }
 
@@ -155,6 +162,7 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
             when = "a DistroX cluster has created",
             then = "the cluster should be available AND the generated cm template should contain the expected values")
     public void testCreateNewRegularDistroXClusterWhileValidatingCMTemplate(MockedTestContext testContext) {
+        createDefaultFreeIpa(testContext);
         testContext
                 .given(DIX_NET_KEY, DistroXNetworkTestDto.class)
                 .given(DIX_IMG_KEY, DistroXImageTestDto.class)
@@ -207,6 +215,9 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
                 .when(getEnvironmentTestClient().create(), key(storageEnvKey))
                 .await(EnvironmentStatus.AVAILABLE)
                 .when(getEnvironmentTestClient().describe(), key(storageEnvKey))
+                .given(FreeIpaTestDto.class).withCatalog(getImageCatalogMockServerSetup().getFreeIpaImageCatalogUrl()).withEnvironment(storageEnvKey)
+                .when(freeIpaTestClient.create())
+                .await(com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.Status.AVAILABLE)
                 .given(sdxInternal, SdxInternalTestDto.class)
                 .withDatabase(sdxDatabaseRequestWithCreateTrue())
                 .withCloudStorage(testStorage())
@@ -258,6 +269,9 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
                 .withName(envName)
                 .when(getEnvironmentTestClient().create())
                 .await(EnvironmentStatus.AVAILABLE)
+                .given(FreeIpaTestDto.class).withCatalog(getImageCatalogMockServerSetup().getFreeIpaImageCatalogUrl()).withEnvironment(envKey)
+                .when(freeIpaTestClient.create())
+                .await(com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.Status.AVAILABLE)
                 .given(sdxInternal, SdxInternalTestDto.class)
                 .withDatabase(sdxDatabaseRequestWithCreateTrue())
                 .withEnvironmentKey(key(envKey))
@@ -290,6 +304,7 @@ public class DistroXClusterCreationTest extends AbstractClouderaManagerTest {
             when = "a DistroX with Cloudera Manager is created",
             then = "the cluster should be available AND internal distrox crn should be equal with non-internal distrox response crn")
     public void testInternalDistroXResponse(MockedTestContext testContext) {
+        createDefaultFreeIpa(testContext);
         testContext
                 .given(DIX_NET_KEY, DistroXNetworkTestDto.class)
                 .given(DIX_IMG_KEY, DistroXImageTestDto.class)

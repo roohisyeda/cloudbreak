@@ -12,7 +12,8 @@ public class DeletionDatahubFlowOperationAuditEventNameConverter implements Data
     @Override
     public boolean isInit(StructuredFlowEvent structuredEvent) {
         FlowDetails flow = structuredEvent.getFlow();
-        return "TERMINATION_EVENT".equals(flow.getFlowEvent()) && "ClusterTerminationFlowConfig".equals(flow.getFlowType());
+        return ("TERMINATION_EVENT".equals(flow.getFlowEvent()) || "PROPER_TERMINATION_EVENT".equals(flow.getFlowEvent()))
+                && "ClusterTerminationFlowConfig".equals(flow.getFlowType());
     }
 
     @Override
