@@ -130,6 +130,15 @@ check_support_dbus_connection:
     - env: {% if filecollector.proxyProtocol == "https" %}
        - HTTPS_PROXY: {{ filecollector.proxyUrl }}{% else %}
        - HTTP_PROXY: {{ filecollector.proxyUrl }}{% endif %}{% endif %}
+{% if filecollector.dbusS3Url %}
+check_support_dbus_s3_connection:
+  cmd.run:
+    - name: "cdp-telemetry utils check-connection --url {{ filecollector.dbusS3Url }}"
+    - failhard: True{% if filecollector.proxyUrl %}
+    - env: {% if filecollector.proxyProtocol == "https" %}
+       - HTTPS_PROXY: {{ filecollector.proxyUrl }}{% else %}
+       - HTTP_PROXY: {{ filecollector.proxyUrl }}{% endif %}{% endif %}
+{% endif %}
 {% endif %}
 
 {% if not filecollector.skipWorkspaceCleanupOnStartup %}
