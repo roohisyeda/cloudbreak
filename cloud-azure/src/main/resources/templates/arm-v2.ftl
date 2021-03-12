@@ -491,8 +491,7 @@
                     ]
                   },
                   "sku": {
-                    "name": "Standard"
-                    <#-- todo: see if we can remove the Availability set code now that we're using the Standard SKU for the LB. -->
+                    "name": "Basic"
                   }
                 }
                 <#if loadBalancer.type == "PUBLIC">
@@ -502,7 +501,7 @@
                     "name": "${loadBalancer.name}-publicIp",
                     "location": "[parameters('region')]",
                     "sku": {
-                        "name": "Standard"
+                        "name": "Basic"
                     },
                     "properties": {
                         "publicIPAddressVersion": "IPv4",
