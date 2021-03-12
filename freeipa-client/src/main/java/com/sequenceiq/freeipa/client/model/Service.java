@@ -63,4 +63,15 @@ public class Service {
     public void setMemberOfRole(List<String> memberOfRole) {
         this.memberOfRole = memberOfRole;
     }
+
+    @Override
+    public String toString() {
+        return "Service{" +
+                "dn='" + dn + '\'' +
+                ", krbprincipalname=" + krbprincipalname +
+                ", krbcanonicalname='" + krbcanonicalname + '\'' +
+                ", hasKeytab=" + hasKeytab +
+                ", memberOfRole=" + memberOfRole +
+                '}';
+    }
 }
