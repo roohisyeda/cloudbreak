@@ -503,6 +503,10 @@ public class AzureClient {
         return handleAuthException(() -> azure.availabilitySets().getByResourceGroup(resourceGroup, asName));
     }
 
+    public Completable deleteLoadBalancerAsync(String resourceGroup, String loadBalancerName) {
+        return handleAuthException(() -> azure.loadBalancers().deleteByResourceGroupAsync(resourceGroup, loadBalancerName));
+    }
+
     public void deleteAvailabilitySet(String resourceGroup, String asName) {
         handleAuthException(() -> azure.availabilitySets().deleteByResourceGroup(resourceGroup, asName));
     }

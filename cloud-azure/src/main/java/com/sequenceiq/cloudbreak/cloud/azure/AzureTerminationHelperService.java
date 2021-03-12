@@ -98,6 +98,13 @@ public class AzureTerminationHelperService {
         azureUtils.deleteNetworkInterfaces(client, resourceGroupName, networkInterfaceNames);
         deleteCloudResourceList(ac, resourcesToRemove, ResourceType.AZURE_NETWORK_INTERFACE);
 
+        if (deleteWholeDeployment) {
+            // Load balancers must be deleted before public IP addresses associated with them can be deleted
+            List<String> loadBalancerNames = getResourceNamesByResourceType(resourcesToRemove, ResourceType.AZURE_LOAD_BALANCER);
+            azureUtils.deleteLoadBalancers(client, resourceGroupName, loadBalancerNames);
+            deleteCloudResourceList(ac, resourcesToRemove, ResourceType.AZURE_LOAD_BALANCER);
+        }
+
         List<String> publicAddressNames = getResourceNamesByResourceType(resourcesToRemove, ResourceType.AZURE_PUBLIC_IP);
         azureUtils.deletePublicIps(client, resourceGroupName, publicAddressNames);
         deleteCloudResourceList(ac, resourcesToRemove, ResourceType.AZURE_PUBLIC_IP);
@@ -109,9 +116,6 @@ public class AzureTerminationHelperService {
         deleteVolumeSets(ac, stack, resourcesToRemove, networkResources, resourceGroupName);
 
         if (deleteWholeDeployment) {
-            // deleting load balancers
-            List<String> loadBalancerNames = getResourceNamesByResourceType(resourcesToRemove, ResourceType.AZURE_LOAD_BALANCER);
-
             // deleting availability sets
             List<String> availabiltySetNames = getResourceNamesByResourceType(resourcesToRemove, ResourceType.AZURE_AVAILABILITY_SET);
             azureUtils.deleteAvailabilitySets(client, resourceGroupName, availabiltySetNames);

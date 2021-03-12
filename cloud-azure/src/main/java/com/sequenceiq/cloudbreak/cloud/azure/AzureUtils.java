@@ -451,6 +451,30 @@ public class AzureUtils {
     }
 
     @Retryable(backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000), maxAttempts = 5)
+    public void deleteLoadBalancers(AzureClient azureClient, String resourceGroupName, Collection<String> loadBalancerNames) {
+        LOGGER.info("Deleting load balancers: {}", loadBalancerNames);
+        try {
+            List<Completable> deleteCompletables = new ArrayList<>();
+            for (String loadBalancerName : loadBalancerNames) {
+                deleteCompletables.add(azureClient.deleteLoadBalancerAsync(resourceGroupName, loadBalancerName)
+                        .doOnError(throwable -> {
+                            LOGGER.error("Error happened on azure load balancer delete: {}", loadBalancerName, throwable);
+                        })
+                        .subscribeOn(Schedulers.io()));
+            }
+            Completable.mergeDelayError(deleteCompletables).await();
+        } catch (CompositeException e) {
+            String errorMessages = e.getExceptions().stream().map(Throwable::getMessage).collect(Collectors.joining());
+            LOGGER.error("Error(s) occurred while waiting for load balancer deletion: {}", errorMessages);
+            throw new CloudbreakServiceException("Error(s) occurred while waiting for load balancer deletion: " + errorMessages, e);
+        } catch (RuntimeException e) {
+            LOGGER.error("Error occurred  while waiting for load balancer deletion: {}", e.getMessage(), e);
+            throw new CloudbreakServiceException("Error occurred while waiting for load balancer deletion: " + e.getMessage(), e);
+        }
+    }
+
+
+    @Retryable(backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000), maxAttempts = 5)
     public void deleteAvailabilitySets(AzureClient azureClient, String resourceGroupName, Collection<String> availabilitySetNames) {
         LOGGER.info("Delete availability sets: {}", availabilitySetNames);
         List<String> failedToDeleteAvailabiltySets = new ArrayList<>();
