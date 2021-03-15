@@ -23,6 +23,10 @@ import static java.util.Map.entry;
 @Component
 public class InstanceGroupV4RequestToInstanceGroupConverter extends AbstractConversionServiceAwareConverter<InstanceGroupV4Request, InstanceGroup> {
 
+    public static final int DEFAULT_UPDATE_DOMAIN_COUNT = 20;
+
+    public static final int DEFAULT_FAULT_DOMAIN_COUNT = 2;
+
     @Inject
     private ProviderParameterCalculator providerParameterCalculator;
 
@@ -57,8 +61,8 @@ public class InstanceGroupV4RequestToInstanceGroupConverter extends AbstractConv
         if (source.getCloudPlatform() == CloudPlatform.AZURE) {
             parameters.put("availabilitySet", Map.ofEntries(
                     entry(AzureInstanceGroupParameters.NAME, String.format("%s-%s-as", source.getName(), instanceGroup.getGroupName())),
-                    entry(AzureInstanceGroupParameters.FAULT_DOMAIN_COUNT, 2),
-                    entry(AzureInstanceGroupParameters.UPDATE_DOMAIN_COUNT, 20)));
+                    entry(AzureInstanceGroupParameters.FAULT_DOMAIN_COUNT, DEFAULT_FAULT_DOMAIN_COUNT),
+                    entry(AzureInstanceGroupParameters.UPDATE_DOMAIN_COUNT, DEFAULT_UPDATE_DOMAIN_COUNT)));
         }
 
         if (parameters != null) {

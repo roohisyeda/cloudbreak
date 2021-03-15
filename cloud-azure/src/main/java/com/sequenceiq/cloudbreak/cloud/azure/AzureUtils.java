@@ -122,14 +122,6 @@ public class AzureUtils {
         sb.delete(j, sb.length());
     }
 
-    /**
-     * Adds "lb" to the end of the string it's provided.
-     * @param resourceGroupName the string to append "lb" to
-     */
-    public static String getLoadBalancerId(String stackName) {
-        return String.format("%s%s", stackName, "lb");
-    }
-
     public String getPrivateInstanceId(String stackName, String groupName, String privateId) {
         return String.format("%s%s%s", stackName, getGroupName(groupName), privateId);
     }

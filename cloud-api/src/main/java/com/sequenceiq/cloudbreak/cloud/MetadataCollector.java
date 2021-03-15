@@ -1,13 +1,13 @@
 package com.sequenceiq.cloudbreak.cloud;
 
+import java.util.List;
+
 import com.sequenceiq.cloudbreak.cloud.context.AuthenticatedContext;
 import com.sequenceiq.cloudbreak.cloud.model.CloudInstance;
 import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import com.sequenceiq.cloudbreak.cloud.model.CloudResource;
 import com.sequenceiq.cloudbreak.cloud.model.CloudVmMetaDataStatus;
 import com.sequenceiq.common.api.type.LoadBalancerType;
-
-import java.util.List;
 
 /**
  * Cloudbreak collects metadata about VM instances like private and floating (public) addresses.

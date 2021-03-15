@@ -74,8 +74,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-// todo: migrate to Junit 5.
-
 /**
  * Validates that ARM template can be created from Free Marker Template {@code .ftl} files.
  *
@@ -468,11 +466,9 @@ public class AzureTemplateBuilderTest {
 
         groups.add(new Group("gateway-group", InstanceGroupType.GATEWAY, Collections.singletonList(instance), security, null,
                 instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE, Optional.empty()));
-//        groups.add(new Group("core-group", InstanceGroupType.CORE, Collections.singletonList(instance), security, null,
-//                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE, Optional.empty()));
 
         List<CloudLoadBalancer> loadBalancers = new ArrayList<>();
-        CloudLoadBalancer loadBalancer = new CloudLoadBalancer(LoadBalancerType.PUBLIC); // todo: test this with private LB as well
+        CloudLoadBalancer loadBalancer = new CloudLoadBalancer(LoadBalancerType.PUBLIC);
         loadBalancer.addPortToTargetGroupMapping(new TargetGroupPortPair(443, 8443), new HashSet<>(groups));
         loadBalancers.add(loadBalancer);
 

@@ -256,8 +256,11 @@
                        </#if>
                        <#if instanceGroup == "GATEWAY" && loadBalancers?? && (loadBalancers?size > 0)>,
                            <#list loadBalancers as loadBalancer>
-                               <#-- todo: this is wrong. But, we have to define a dependency between the NIC and the address pool-->
-                               <#-- this makes every instance in the gateway group depend on every load balancer address pool -->
+                               <#--
+                                   we have to define a dependency between the NIC and the address pool it belongs to
+                                   this makes every instance in the gateway group depend on every load balancer address pool
+                                   when we add support for multiple load balancers, this will have to be updated.
+                                -->
                                "[resourceId('Microsoft.Network/loadBalancers', '${loadBalancer.name}')]"
                            </#list>
                        </#if>
@@ -295,7 +298,11 @@
                                    <#if instanceGroup == "GATEWAY" && loadBalancers?? && (loadBalancers?size > 0)>,
                                    "loadBalancerBackendAddressPools": [
                                        {
-                                           <#--This is adding the NIC to all load balancer backend address pools, which is probably not what we want long term.-->
+                                           <#--
+                                               This is adding the NIC to all load balancer backend address pools.
+                                               When we add more load balancers, we'll have to associate the NIC with
+                                               only a single LB pool
+                                           -->
                                            <#list loadBalancers as loadBalancer>
                                            "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', '${loadBalancer.name}', 'address-pool')]"
                                            <#if (loadBalancer_index + 1) != loadBalancers?size>,</#if>
@@ -414,7 +421,7 @@
                   "properties": {
                     "backendAddressPools": [
                       {
-<#--                todo: make this name parameterized, and include it in the NICs above-->
+<#--                todo: when additional lbs and pools are added we'll have to handle associating the appropriate address pool names-->
                         "name": "address-pool",
                         "properties": {}
                       }
@@ -456,7 +463,6 @@
                                 "name": "${rule.name}",
                                 "properties": {
                                     "backendAddressPool": {
-<#--                            todo: parameterize this address-pool -->
                                         "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', '${loadBalancer.name}', 'address-pool')]"
                                     },
                                     "backendPort": ${rule.backendPort},

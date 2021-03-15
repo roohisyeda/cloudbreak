@@ -11,8 +11,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public final class AzureLoadBalancer {
-    // todo: handling of rules and probes is naive here, need to create an association from a rule to the probes that it relies on.
-    // I think we should _create_ a probe, then associate it with a rule and add it to the Load Balancer's list of probes.
     private static final String LOAD_BALANCER_NAME_PREFIX = "LoadBalancer";
 
     private final List<AzureLoadBalancingRule> rules;
