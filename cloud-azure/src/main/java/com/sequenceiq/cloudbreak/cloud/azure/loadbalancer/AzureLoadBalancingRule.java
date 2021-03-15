@@ -4,11 +4,14 @@ import com.sequenceiq.cloudbreak.cloud.model.TargetGroupPortPair;
 
 public final class AzureLoadBalancingRule {
     private final String name;
+
     private final int backendPort;
+
     private final int frontendPort;
+
     private final AzureLoadBalancerProbe probe;
 
-    public AzureLoadBalancingRule (TargetGroupPortPair portPair) {
+    public AzureLoadBalancingRule(TargetGroupPortPair portPair) {
         this.backendPort = portPair.getTrafficPort();
         this.frontendPort = portPair.getTrafficPort();
         this.name = defaultNameFromPort(portPair.getTrafficPort());
@@ -31,7 +34,7 @@ public final class AzureLoadBalancingRule {
         return frontendPort;
     }
 
-    public AzureLoadBalancerProbe getProbe () {
+    public AzureLoadBalancerProbe getProbe() {
         return probe;
     }
 }

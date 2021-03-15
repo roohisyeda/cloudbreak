@@ -7,13 +7,14 @@ import java.util.Objects;
 
 public class AzureLoadBalancerProbe {
     private final int port;
+
     private final String name;
 
     public AzureLoadBalancerProbe(int port) {
-        this(port, "port-" + Integer.toString(port ) + "-probe");
+        this(port, "port-" + Integer.toString(port) + "-probe");
     }
 
-    public AzureLoadBalancerProbe (int port, String name) {
+    public AzureLoadBalancerProbe(int port, String name) {
         Objects.requireNonNull(name);
 
         this.port = port;
@@ -30,8 +31,12 @@ public class AzureLoadBalancerProbe {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) { return false; }
-        if (obj == this) { return true; }
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
         if (obj.getClass() != getClass()) {
             return false;
         }

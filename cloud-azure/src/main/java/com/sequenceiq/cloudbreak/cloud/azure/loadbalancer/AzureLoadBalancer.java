@@ -37,7 +37,7 @@ public final class AzureLoadBalancer {
         this.type = cloudLoadBalancer.getType();
     }
 
-    public static String getLoadBalancerName (LoadBalancerType type) {
+    public static String getLoadBalancerName(LoadBalancerType type) {
         return LOAD_BALANCER_NAME_PREFIX + type.toString();
     }
 
@@ -53,7 +53,7 @@ public final class AzureLoadBalancer {
         return name;
     }
 
-    public LoadBalancerType getType () {
+    public LoadBalancerType getType() {
         return type;
     }
 }

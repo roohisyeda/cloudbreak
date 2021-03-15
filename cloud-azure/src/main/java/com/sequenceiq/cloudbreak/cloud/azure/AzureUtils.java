@@ -465,7 +465,6 @@ public class AzureUtils {
         }
     }
 
-
     @Retryable(backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000), maxAttempts = 5)
     public void deleteAvailabilitySets(AzureClient azureClient, String resourceGroupName, Collection<String> availabilitySetNames) {
         LOGGER.info("Delete availability sets: {}", availabilitySetNames);

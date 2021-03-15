@@ -1,7 +1,7 @@
 package com.sequenceiq.cloudbreak.cloud.azure;
 
 import static com.sequenceiq.cloudbreak.cloud.azure.AzureInstanceTemplateOperation.UPSCALE;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.HashMap;
