@@ -53,7 +53,7 @@ public class CredentialVerificationHandler implements CloudPlatformEventHandler<
                 cloudCredentialStatus = new CloudCredentialStatus(request.getCloudCredential(), CredentialStatus.FAILED, e, errorMessage);
             }
             CredentialVerificationResult credentialVerificationResult;
-            if (cloudCredentialStatus.getException() == null) {
+            if (cloudCredentialStatus.getStatus() != CredentialStatus.FAILED) {
                 credentialVerificationResult = new CredentialVerificationResult(request.getResourceId(), cloudCredentialStatus);
             } else {
                 credentialVerificationResult = new CredentialVerificationResult(cloudCredentialStatus.getStatusReason(), cloudCredentialStatus.getException(),
