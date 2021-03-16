@@ -1,7 +1,13 @@
 package com.sequenceiq.cloudbreak.structuredevent.service.telemetry.mapper;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -11,26 +17,44 @@ import com.sequenceiq.cloudbreak.structuredevent.event.FlowDetails;
 
 @Component
 public class ClusterUseCaseMapper {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterUseCaseMapper.class);
 
     @Inject
     private ClusterRequestProcessingStepMapper clusterRequestProcessingStepMapper;
 
+    @Inject
+    private List<FlowUseCaseMapper> useCaseMappers;
+
+    @Inject
+    private DefaultFlowUseCaseMapper defaultFlowUseCaseMapper;
+
+    private Map<String, FlowUseCaseMapper> useCaseMapperMap;
+
+    @PostConstruct
+    private void initialize() {
+        useCaseMapperMap = useCaseMappers.stream()
+                .filter(flowUseCaseMapper -> StringUtils.isNotEmpty(flowUseCaseMapper.getRootFlowChainType()))
+                .collect(Collectors.toMap(FlowUseCaseMapper::getRootFlowChainType, flowUseCaseMapper -> flowUseCaseMapper));
+    }
+
     // At the moment we need to introduce a complex logic to figure out the use case
     public UsageProto.CDPClusterStatus.Value useCase(FlowDetails flow) {
         UsageProto.CDPClusterStatus.Value useCase = UsageProto.CDPClusterStatus.Value.UNSET;
+        String rootFlowChainType = getRootFlowChainType(flow.getFlowChainType());
+        FlowUseCaseMapper flowUseCaseMapper = useCaseMapperMap.getOrDefault(rootFlowChainType, defaultFlowUseCaseMapper);
         if (clusterRequestProcessingStepMapper.isFirstStep(flow)) {
-            useCase = firstStepToUseCaseMapping(flow.getFlowType());
+            useCase = flowUseCaseMapper.mapFirstStepToUseCase(flow.getFlowType())
+                    .orElse(firstStepToUseCaseMapping(rootFlowChainType, flow.getFlowType()));
         } else if (clusterRequestProcessingStepMapper.isLastStep(flow)) {
-            useCase = lastStepToUseCaseMapping(flow.getFlowState());
+            useCase = flowUseCaseMapper.mapLastStepToUseCase(flow.getFlowType(), flow.getFlowState())
+                    .orElse(lastStepToUseCaseMapping(rootFlowChainType, flow.getFlowType(), flow.getFlowState()));
         }
         LOGGER.debug("FlowDetails: {}, Usecase: {}", flow, useCase);
         return useCase;
     }
 
     //CHECKSTYLE:OFF: CyclomaticComplexity
-    private UsageProto.CDPClusterStatus.Value firstStepToUseCaseMapping(String flowType) {
+    private UsageProto.CDPClusterStatus.Value firstStepToUseCaseMapping(String rootFlowChainType, String flowType) {
         UsageProto.CDPClusterStatus.Value useCase = UsageProto.CDPClusterStatus.Value.UNSET;
         switch (flowType) {
             case "CloudConfigValidationFlowConfig":
@@ -51,9 +75,6 @@ public class ClusterUseCaseMapper {
             case "ClusterStopFlowConfig":
                 useCase = UsageProto.CDPClusterStatus.Value.SUSPEND_STARTED;
                 break;
-            case "SaltUpdateFlowConfig":
-                useCase = UsageProto.CDPClusterStatus.Value.UPGRADE_STARTED;
-                break;
             case "ClusterCertificateRenewFlowConfig":
                 useCase = UsageProto.CDPClusterStatus.Value.RENEW_PUBLIC_CERT_STARTED;
                 break;
@@ -63,13 +84,13 @@ public class ClusterUseCaseMapper {
             default:
                 LOGGER.debug("Flow type: {}", flowType);
         }
-        LOGGER.debug("Mapping flow type to use-case: {}, {}", flowType, useCase);
+        LOGGER.debug("Mapping flow type to use-case: [flowchain: {}, flow: {}]: usecase: {}", rootFlowChainType, flowType, useCase);
         return useCase;
     }
     //CHECKSTYLE:ON
 
     //CHECKSTYLE:OFF: CyclomaticComplexity
-    private UsageProto.CDPClusterStatus.Value lastStepToUseCaseMapping(String flowState) {
+    private UsageProto.CDPClusterStatus.Value lastStepToUseCaseMapping(String rootFlowChainType, String flowType, String flowState) {
         UsageProto.CDPClusterStatus.Value useCase = UsageProto.CDPClusterStatus.Value.UNSET;
         switch (flowState) {
             case "CLUSTER_CREATION_FINISHED_STATE":
@@ -120,13 +141,6 @@ public class ClusterUseCaseMapper {
             case "STOP_FAILED_STATE":
                 useCase = UsageProto.CDPClusterStatus.Value.SUSPEND_FAILED;
                 break;
-            case "CLUSTER_UPGRADE_FINISHED_STATE":
-                useCase = UsageProto.CDPClusterStatus.Value.UPGRADE_FINISHED;
-                break;
-            case "SALT_UPDATE_FAILED_STATE":
-            case "CLUSTER_UPGRADE_FAILED_STATE":
-                useCase = UsageProto.CDPClusterStatus.Value.UPGRADE_FAILED;
-                break;
             case "CLUSTER_CERTIFICATE_RENEWAL_FINISHED_STATE":
                 useCase = UsageProto.CDPClusterStatus.Value.RENEW_PUBLIC_CERT_FINISHED;
                 break;
@@ -146,4 +160,11 @@ public class ClusterUseCaseMapper {
         return useCase;
     }
     //CHECKSTYLE:ON
+
+    private String getRootFlowChainType(String flowChainTypes) {
+        if (StringUtils.isNotEmpty(flowChainTypes)) {
+            return flowChainTypes.split("/")[0];
+        }
+        return "";
+    }
 }
